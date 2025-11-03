@@ -1,0 +1,50 @@
+import type { Message } from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
+import type { Command } from '../types/command.js';
+
+export const help: Command = {
+  name: 'help',
+  description: 'Muestra todos los comandos disponibles',
+  aliases: ['h', 'commands'],
+  execute: async (message: Message, args: string[]) => {
+    const embed = new EmbedBuilder()
+      .setColor('#ff9900')
+      .setTitle('🎵 Bot de Música - Comandos')
+      .setDescription('Prefijo de comandos: `!`')
+      .addFields(
+        {
+          name: '▶️ Reproducción',
+          value:
+            '`!play <url o nombre>` - Reproduce una canción (URL o búsqueda)\n' +
+            '`!pause` - Pausa la reproducción\n' +
+            '`!resume` - Reanuda la reproducción\n' +
+            '`!skip` - Salta a la siguiente canción\n' +
+            '`!stop` - Detiene y desconecta el bot',
+        },
+        {
+          name: '📋 Cola',
+          value:
+            '`!queue` - Muestra la cola de reproducción\n' +
+            '`!shuffle` - Activa/desactiva modo aleatorio\n' +
+            '`!repeat <none|song|queue>` - Configura repetición',
+        },
+        {
+          name: '🤖 IA',
+          value: '`!recommend` - Obtiene recomendaciones basadas en la canción actual',
+        },
+        {
+          name: 'ℹ️ Información',
+          value:
+            '🔍 Busca por nombre o usa URLs directas\n' +
+            '📥 Videos <15min: Se descargan con mejor audio y reproducen localmente\n' +
+            '📡 Videos >15min: Streaming directo sin descargar\n' +
+            '🗑️ Limpieza automática de archivos descargados\n' +
+            '🤖 Recomendaciones: Powered by Google Gemini',
+        }
+      )
+      .setFooter({ text: 'Desarrollado con TypeScript + discord.js' })
+      .setTimestamp();
+
+    await message.reply({ embeds: [embed] });
+  },
+};
