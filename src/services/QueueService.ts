@@ -14,7 +14,7 @@ export class QueueService {
           repeat: 'none',
           shuffle: false,
         },
-        volume: 50, // Volumen inicial por defecto: 50%
+        volume: 100, // Volumen inicial por defecto: 100%
       });
     }
     return this.queues.get(guildId)!;

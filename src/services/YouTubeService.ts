@@ -2,6 +2,8 @@ import { YouTube } from 'youtube-sr';
 import ytdl from 'youtube-dl-exec';
 import type { Song } from '../types/index.js';
 import { Readable } from 'stream';
+import fs from 'fs';
+import path from 'path';
 
 export class YouTubeService {
   constructor() {
@@ -159,8 +161,16 @@ export class YouTubeService {
 
       console.log(`🎵 Creando stream con yt-dlp para: ${url}`);
 
-      // Usar yt-dlp para obtener el stream de audio
-      const stream = ytdl.exec(url, {
+      // Verificar si existe archivo de cookies
+      const cookiesPath = path.join(process.cwd(), 'cookies.txt');
+      const hasCookies = fs.existsSync(cookiesPath);
+
+      if (hasCookies) {
+        console.log('🍪 Usando cookies de YouTube');
+      }
+
+      // Configurar opciones de yt-dlp
+      const options: any = {
         output: '-', // Enviar a stdout
         format: 'bestaudio', // Mejor calidad de audio
         extractAudio: true,
@@ -172,7 +182,15 @@ export class YouTubeService {
           'referer:youtube.com',
           'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         ]
-      });
+      };
+
+      // Solo agregar cookies si el archivo existe
+      if (hasCookies) {
+        options.cookies = cookiesPath;
+      }
+
+      // Usar yt-dlp para obtener el stream de audio
+      const stream = ytdl.exec(url, options);
 
       const audioStream = stream.stdout as Readable;
       const stderrChunks: string[] = [];
