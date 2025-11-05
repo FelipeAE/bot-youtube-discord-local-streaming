@@ -169,12 +169,10 @@ export class YouTubeService {
         console.log('🍪 Usando cookies de YouTube');
       }
 
-      // Configurar opciones de yt-dlp
+      // Configurar opciones de yt-dlp (sin extractAudio para mejor compatibilidad)
       const options: any = {
         output: '-', // Enviar a stdout
-        format: 'bestaudio', // Mejor calidad de audio
-        extractAudio: true,
-        audioFormat: 'opus', // Formato óptimo para Discord
+        format: 'bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio', // Formatos compatibles en orden de preferencia
         noCheckCertificates: true,
         noWarnings: true,
         preferFreeFormats: true,
@@ -255,6 +253,21 @@ export class YouTubeService {
           const unavailableError = new Error('Este video no está disponible');
           (unavailableError as any).code = 'VIDEO_UNAVAILABLE';
           throw unavailableError;
+        }
+
+        // Detectar formato no disponible
+        if (stderr.includes('Requested format is not available')) {
+          const formatError = new Error('El formato de este video no está disponible para streaming');
+          (formatError as any).code = 'FORMAT_UNAVAILABLE';
+          throw formatError;
+        }
+
+        // Detectar problemas con cookies
+        if (stderr.includes('unable to download video data') ||
+            stderr.includes('HTTP Error 403')) {
+          const cookieError = new Error('Error de autenticación - verifica tus cookies de YouTube');
+          (cookieError as any).code = 'AUTH_ERROR';
+          throw cookieError;
         }
       }
 

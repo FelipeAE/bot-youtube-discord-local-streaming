@@ -187,6 +187,12 @@ export class AudioService {
                       `Este video requiere autenticación de YouTube. Configurando cookies se puede reproducir.`;
       } else if (error.code === 'VIDEO_UNAVAILABLE') {
         errorMessage = `⚠️ **Video no disponible saltado:**\n"${nextSong.title}"`;
+      } else if (error.code === 'FORMAT_UNAVAILABLE') {
+        errorMessage = `⚠️ **Formato de video no disponible:**\n"${nextSong.title}"\n\n` +
+                      `Este video no puede ser reproducido en streaming. Prueba con otro video.`;
+      } else if (error.code === 'AUTH_ERROR') {
+        errorMessage = `⚠️ **Error de autenticación:**\n"${nextSong.title}"\n\n` +
+                      `Tus cookies de YouTube pueden estar vencidas. Exporta nuevas cookies o borra el archivo cookies.txt`;
       } else {
         errorMessage = `❌ **Error reproduciendo:**\n"${nextSong.title}"\n` +
                       `Saltando a la siguiente canción...`;
