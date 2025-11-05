@@ -3,7 +3,9 @@
     "allow": [
       "Bash(git push:*)",
       "Bash(git commit:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(C:Usersfiaebot-youtube-discord-local-streamingnode_modulesyoutube-dl-execbinyt-dlp.exe \"https://www.youtube.com/watch?v=02vDkMEdIkY\" --list-formats --cookies cookies.txt)",
+      "Bash(cmd.exe /c \"node_modules\\youtube-dl-exec\\bin\\yt-dlp.exe https://www.youtube.com/watch?v=02vDkMEdIkY --list-formats --cookies cookies.txt\")"
     ],
     "deny": [],
     "ask": []

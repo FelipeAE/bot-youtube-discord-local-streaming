@@ -169,10 +169,10 @@ export class YouTubeService {
         console.log('🍪 Usando cookies de YouTube');
       }
 
-      // Configurar opciones de yt-dlp (sin extractAudio para mejor compatibilidad)
+      // Configurar opciones de yt-dlp (formato muy permisivo)
       const options: any = {
         output: '-', // Enviar a stdout
-        format: 'bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio', // Formatos compatibles en orden de preferencia
+        format: 'bestaudio/best', // Más permisivo - acepta cualquier formato
         noCheckCertificates: true,
         noWarnings: true,
         preferFreeFormats: true,
