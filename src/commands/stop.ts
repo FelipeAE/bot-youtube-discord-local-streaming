@@ -15,13 +15,15 @@ export const stop: Command = {
     const state = queueService.getQueue(message.guildId);
 
     if (!state.isPlaying) {
-      await message.reply('No hay nada reproduciéndose actualmente.');
+      const reply = await message.reply('No hay nada reproduciéndose actualmente.');
+      setTimeout(() => reply.delete().catch(() => {}), 5000);
       return;
     }
 
     audioService.stop(message.guildId);
     queueService.clearQueue(message.guildId);
 
-    await message.reply('⏹️ Reproducción detenida y cola limpiada.');
+    const reply = await message.reply('⏹️ Reproducción detenida y cola limpiada.');
+    setTimeout(() => reply.delete().catch(() => {}), 5000);
   },
 };

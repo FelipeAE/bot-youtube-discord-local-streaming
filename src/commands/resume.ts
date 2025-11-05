@@ -15,9 +15,11 @@ export const resume: Command = {
     const success = audioService.resume(message.guildId);
 
     if (success) {
-      await message.reply('▶️ Reproducción reanudada.');
+      const reply = await message.reply('▶️ Reproducción reanudada.');
+      setTimeout(() => reply.delete().catch(() => {}), 5000);
     } else {
-      await message.reply('No hay nada pausado actualmente.');
+      const reply = await message.reply('No hay nada pausado actualmente.');
+      setTimeout(() => reply.delete().catch(() => {}), 5000);
     }
   },
 };

@@ -14,9 +14,11 @@ export const shuffle: Command = {
     const shuffleEnabled = queueService.toggleShuffle(message.guildId);
 
     if (shuffleEnabled) {
-      await message.reply('🔀 Modo aleatorio activado.');
+      const reply = await message.reply('🔀 Modo aleatorio activado.');
+      setTimeout(() => reply.delete().catch(() => {}), 5000);
     } else {
-      await message.reply('▶️ Modo aleatorio desactivado.');
+      const reply = await message.reply('▶️ Modo aleatorio desactivado.');
+      setTimeout(() => reply.delete().catch(() => {}), 5000);
     }
   },
 };

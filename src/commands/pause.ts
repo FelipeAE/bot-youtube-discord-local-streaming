@@ -14,9 +14,11 @@ export const pause: Command = {
     const success = audioService.pause(message.guildId);
 
     if (success) {
-      await message.reply('⏸️ Reproducción pausada.');
+      const reply = await message.reply('⏸️ Reproducción pausada.');
+      setTimeout(() => reply.delete().catch(() => {}), 5000);
     } else {
-      await message.reply('No hay nada reproduciéndose actualmente.');
+      const reply = await message.reply('No hay nada reproduciéndose actualmente.');
+      setTimeout(() => reply.delete().catch(() => {}), 5000);
     }
   },
 };

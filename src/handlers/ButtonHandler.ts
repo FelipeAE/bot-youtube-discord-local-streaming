@@ -4,7 +4,7 @@ import { QueueService } from '../services/QueueService.js';
 import { AudioService } from '../services/AudioService.js';
 import { YouTubeService } from '../services/YouTubeService.js';
 import { AIService } from '../services/AIService.js';
-import { createPlayerButtons, updatePauseButton, updateShuffleButton } from '../components/PlayerButtons.js';
+import { createPlayerButtons } from '../components/PlayerButtons.js';
 import { recommendationsCache } from '../commands/recommend.js';
 
 // Cache para almacenar la página actual de la cola (messageId -> page)
@@ -56,6 +56,18 @@ export class ButtonHandler {
           break;
         case 'player_shuffle':
           await this.handleShuffle(interaction, guildId);
+          break;
+        case 'player_repeat':
+          await this.handleRepeat(interaction, guildId);
+          break;
+        case 'player_volume':
+          await this.handleVolume(interaction, guildId);
+          break;
+        case 'vol_down_10':
+        case 'vol_down_5':
+        case 'vol_up_5':
+        case 'vol_up_10':
+          await this.handleVolumeAdjust(interaction, guildId);
           break;
         case 'player_recommend':
           await this.handleRecommend(interaction, guildId);
@@ -119,9 +131,7 @@ export class ButtonHandler {
       // Enviar nuevo mensaje con botones
       const channel = interaction.channel;
       if (channel && channel.isSendable()) {
-        const playerButtons = this.queueService.getQueue(guildId).options.shuffle
-          ? updateShuffleButton(true, state.isPaused)
-          : (state.isPaused ? updatePauseButton(true) : updatePauseButton(false));
+        const playerButtons = createPlayerButtons(state);
 
         const playerMessage = await channel.send({
           content: `🎵 **Now Playing:**\n**${song.title}**\n⏱️ Duración: ${duration}\n👤 Solicitado por: ${song.requestedBy}`,
@@ -146,12 +156,13 @@ export class ButtonHandler {
   }
 
   private async handlePauseResume(interaction: any, guildId: string, isPaused: boolean) {
+    const state = this.queueService.getQueue(guildId);
+
     if (!isPaused) {
       const success = this.audioService.pause(guildId);
       if (success) {
-        const state = this.queueService.getQueue(guildId);
         await interaction.update({
-          components: updatePauseButton(true)
+          components: createPlayerButtons(state)
         });
         await interaction.followUp({ content: '⏸️ Reproducción pausada', ephemeral: true });
       } else {
@@ -161,7 +172,7 @@ export class ButtonHandler {
       const success = this.audioService.resume(guildId);
       if (success) {
         await interaction.update({
-          components: updatePauseButton(false)
+          components: createPlayerButtons(state)
         });
         await interaction.followUp({ content: '▶️ Reproducción reanudada', ephemeral: true });
       } else {
@@ -369,13 +380,147 @@ export class ButtonHandler {
     const state = this.queueService.getQueue(guildId);
 
     await interaction.update({
-      components: updateShuffleButton(isShuffled, state.isPaused)
+      components: createPlayerButtons(state)
     });
 
     await interaction.followUp({
       content: isShuffled ? '🔀 Modo aleatorio activado' : '▶️ Modo aleatorio desactivado',
       ephemeral: true
     });
+  }
+
+  private async handleRepeat(interaction: any, guildId: string) {
+    const state = this.queueService.getQueue(guildId);
+
+    // Ciclar entre modos: none → song → queue → none
+    let newMode: 'none' | 'song' | 'queue';
+    let message: string;
+
+    if (state.options.repeat === 'none') {
+      newMode = 'song';
+      message = '🔂 Repetir canción actual activado';
+    } else if (state.options.repeat === 'song') {
+      newMode = 'queue';
+      message = '🔁 Repetir cola completa activado';
+    } else {
+      newMode = 'none';
+      message = '➡️ Repetición desactivada';
+    }
+
+    this.queueService.setRepeat(guildId, newMode);
+
+    await interaction.update({
+      components: createPlayerButtons(state)
+    });
+
+    await interaction.followUp({
+      content: message,
+      ephemeral: true
+    });
+  }
+
+  private async handleVolume(interaction: any, guildId: string) {
+    const state = this.queueService.getQueue(guildId);
+    const currentVolume = state.volume;
+
+    // Crear botones de ajuste rápido
+    const volumeRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId('vol_down_10')
+        .setLabel('-10%')
+        .setStyle(ButtonStyle.Danger)
+        .setDisabled(currentVolume <= 0),
+      new ButtonBuilder()
+        .setCustomId('vol_down_5')
+        .setLabel('-5%')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(currentVolume <= 0),
+      new ButtonBuilder()
+        .setCustomId('vol_up_5')
+        .setLabel('+5%')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(currentVolume >= 100),
+      new ButtonBuilder()
+        .setCustomId('vol_up_10')
+        .setLabel('+10%')
+        .setStyle(ButtonStyle.Success)
+        .setDisabled(currentVolume >= 100)
+    );
+
+    await interaction.reply({
+      content: `🔊 **Volumen actual:** ${currentVolume}%\n\nUsa los botones para ajustar:`,
+      components: [volumeRow],
+      ephemeral: true
+    });
+  }
+
+  private async handleVolumeAdjust(interaction: any, guildId: string) {
+    const state = this.queueService.getQueue(guildId);
+    const currentVolume = state.volume;
+
+    // Determinar el ajuste según el botón presionado
+    let adjustment = 0;
+    switch (interaction.customId) {
+      case 'vol_down_10':
+        adjustment = -10;
+        break;
+      case 'vol_down_5':
+        adjustment = -5;
+        break;
+      case 'vol_up_5':
+        adjustment = 5;
+        break;
+      case 'vol_up_10':
+        adjustment = 10;
+        break;
+    }
+
+    const newVolume = Math.max(0, Math.min(100, currentVolume + adjustment));
+    this.audioService.setVolume(guildId, newVolume);
+
+    // Actualizar mensaje con nuevo volumen
+    const volumeRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId('vol_down_10')
+        .setLabel('-10%')
+        .setStyle(ButtonStyle.Danger)
+        .setDisabled(newVolume <= 0),
+      new ButtonBuilder()
+        .setCustomId('vol_down_5')
+        .setLabel('-5%')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(newVolume <= 0),
+      new ButtonBuilder()
+        .setCustomId('vol_up_5')
+        .setLabel('+5%')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(newVolume >= 100),
+      new ButtonBuilder()
+        .setCustomId('vol_up_10')
+        .setLabel('+10%')
+        .setStyle(ButtonStyle.Success)
+        .setDisabled(newVolume >= 100)
+    );
+
+    await interaction.update({
+      content: `🔊 **Volumen ajustado:** ${newVolume}%\n\nUsa los botones para ajustar:`,
+      components: [volumeRow]
+    });
+
+    // Actualizar botones del reproductor principal si existe el mensaje
+    if (state.playerMessageId && state.playerChannelId) {
+      try {
+        const channel = await this.client.channels.fetch(state.playerChannelId);
+        if (channel && channel.isTextBased()) {
+          const playerMessage = await (channel as any).messages.fetch(state.playerMessageId);
+          await playerMessage.edit({
+            components: createPlayerButtons(state)
+          });
+        }
+      } catch (error) {
+        console.log('⚠️ No se pudo actualizar el mensaje del reproductor');
+      }
+    }
   }
 
   private async handleRecommend(interaction: any, guildId: string) {

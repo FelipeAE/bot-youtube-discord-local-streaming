@@ -167,6 +167,12 @@ export class AudioService {
         inlineVolume: true,
       });
 
+      // Aplicar volumen guardado
+      if (resource.volume) {
+        resource.volume.setVolume(state.volume / 100);
+        console.log(`🔊 Volumen inicial establecido: ${state.volume}%`);
+      }
+
       player.play(resource);
 
       // Enviar botones del reproductor para la nueva canción
@@ -242,6 +248,31 @@ export class AudioService {
     state.currentSong = null;
   }
 
+  getVolume(guildId: string): number {
+    const state = this.queueService.getQueue(guildId);
+    return state.volume;
+  }
+
+  setVolume(guildId: string, volume: number): void {
+    const state = this.queueService.getQueue(guildId);
+    const player = this.players.get(guildId);
+
+    // Validar rango
+    const validVolume = Math.max(0, Math.min(100, volume));
+    state.volume = validVolume;
+
+    // Aplicar volumen al reproductor actual si existe
+    if (player && player.state.status === AudioPlayerStatus.Playing) {
+      // @ts-ignore - AudioResource tiene volumeManager cuando inlineVolume: true
+      const resource = (player.state as any).resource;
+      if (resource && resource.volume) {
+        // Convertir de 0-100 a 0.0-1.0
+        resource.volume.setVolume(validVolume / 100);
+        console.log(`🔊 Volumen ajustado a ${validVolume}% (${validVolume / 100})`);
+      }
+    }
+  }
+
   private async deletePlayerMessage(guildId: string): Promise<void> {
     const state = this.queueService.getQueue(guildId);
 
@@ -275,7 +306,7 @@ export class AudioService {
 
       // Importar createPlayerButtons dinámicamente para evitar dependencias circulares
       const { createPlayerButtons } = await import('../components/PlayerButtons.js');
-      const playerButtons = createPlayerButtons();
+      const playerButtons = createPlayerButtons(state);
 
       const playerMessage = await (channel as any).send({
         content: `▶️ **Reproduciendo:**\n**${song.title}**\n⏱️ Duración: ${duration}\n👤 Solicitado por: ${song.requestedBy}`,

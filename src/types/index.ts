@@ -17,6 +17,7 @@ export interface PlayerState {
   currentSong: Song | null;
   queue: Song[];
   options: QueueOptions;
+  volume: number; // 0-100
   playerMessageId?: string;
   playerChannelId?: string;
 }

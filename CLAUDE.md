@@ -1,253 +1,356 @@
-# Resumen de Cambios Recientes - Bot de M�sica Discord
+# Resumen de Cambios Recientes - Bot de Música Discord
 
-## �ltima Actualizaci�n: 2025-11-03
+## Última Actualización: 2025-11-04
 
-### <� Migraci�n Completa a Streaming (v2.0)
+### 🎉 Version 3.0 - Sistema de Control Mejorado
 
-Se realiz� una refactorizaci�n completa del sistema de reproducci�n:
-
----
-
-##  Cambios Implementados
-
-### 1. **Migraci�n de ytdl-core a play-dl**
-- L Eliminado: `@distube/ytdl-core` (ten�a errores 403 de YouTube)
--  Ahora usa: `play-dl` para todo (b�squeda + streaming)
-- **Beneficio**: Mayor estabilidad y menos bloqueos de YouTube
-
-### 2. **Sistema 100% Streaming**
-- L Eliminado: Sistema de descarga local de archivos
-- L Eliminado: Carpeta `temp/downloads/`
-- L Eliminado: L�gica de limpieza de archivos
--  Ahora: Reproducci�n por streaming directo para TODOS los videos
-- **Beneficio**:
-  - Sin uso de espacio en disco
-  - Reproducci�n instant�nea (1-2 segundos)
-  - C�digo m�s simple y mantenible
-
-### 3. **Soporte para Playlists Grandes**
--  M�todo `getPlaylistVideos()` en YouTubeService
--  L�mite configurable (default: 500 videos)
--  Detecci�n autom�tica de URLs de playlist
--  Comando `/play` ahora acepta URLs de playlists completas
-- **Uso**:
-  ```
-  !play https://youtube.com/playlist?list=...
-  ```
-
-### 4. **Soporte para Videos Largos (3+ horas)**
--  Sin l�mite de duraci�n
--  Optimizado para videos largos con configuraci�n de calidad media-alta
--  Formato de duraci�n mejorado (muestra horas:minutos:segundos)
-
-### 5. **Mejoras en AudioService**
-- L Eliminada: L�gica de lectura de archivos locales
--  Nuevo: M�todo `formatDuration()` para mostrar tiempos largos
--  Mejor manejo de errores en streaming
--  Volumen inline habilitado (`inlineVolume: true`)
-
-### 6. **Mejoras en Tipos**
-- L Eliminado: `filePath?: string` en interface Song
--  Interface Song ahora m�s simple:
-  ```typescript
-  interface Song {
-    title: string;
-    url: string;
-    duration: number;
-    thumbnail?: string;
-    requestedBy: string;
-  }
-  ```
+Se implementaron mejoras significativas en UX, controles interactivos y sistema de recomendaciones.
 
 ---
 
-## =� Archivos Modificados
+## ✅ Cambios Implementados (Sesión 2025-11-04)
 
-### Completamente Reescritos:
-1. **src/services/YouTubeService.ts**
-   - Nuevos m�todos:
-     - `getVideoInfo()` - Info de video individual
-     - `searchVideo()` - B�squeda o URL
-     - `getPlaylistVideos()` - Obtener playlist completa
-     - `getAudioStream()` - Stream de audio
-     - `isValidYouTubeURL()` - Validaci�n de URLs
+### 1. **Arreglo de Botones Duplicados**
+- ❌ Eliminado: Envío duplicado de botones en `play.ts`
+- ✅ Ahora: Solo `AudioService.ts` envía los botones una vez
+- **Beneficio**: Sin duplicación visual, chat más limpio
+
+### 2. **Mensajes Auto-Eliminables**
+- ✅ Todos los mensajes temporales se borran automáticamente:
+  - ⏱️ 5 segundos: pause, resume, skip, stop, shuffle, repeat
+  - ⏱️ 8 segundos: "Agregado a la cola"
+  - ⏱️ 10 segundos: "Playlist agregada"
+- **Beneficio**: Chat limpio, sin spam de mensajes antiguos
+
+### 3. **Control de Volumen Completo**
+- ✅ Nuevo comando: `!volume [0-100]` (aliases: `!vol`, `!v`)
+- ✅ Nuevo botón interactivo: `🔊 [Volumen]%`
+- ✅ Menú ephemeral con ajustes rápidos: `-10% | -5% | +5% | +10%`
+- ✅ Volumen se persiste por servidor (default: 50%)
+- ✅ Se aplica automáticamente a nuevas canciones
+- **Ubicación**:
+  - `src/commands/volume.ts` - Comando
+  - `AudioService.ts:245-268` - Métodos getVolume/setVolume
+  - `ButtonHandler.ts:422-524` - Handlers de botones
+
+### 4. **Recomendaciones de IA Mejoradas**
+- ✅ Prompt mejorado con contexto completo:
+  - Título + Artista (extraído automáticamente)
+  - Duración de la canción
+  - URL del video
+  - Criterios específicos (género, tempo, época)
+- ✅ Formato consistente: "Título - Artista"
+- ✅ Filtrado de ejemplos en respuesta
+- **Beneficio**: Recomendaciones más precisas y relevantes
+- **Ubicación**: `src/services/AIService.ts:12-65`
+
+### 5. **Botón de Repeat Interactivo**
+- ✅ Cicla entre 3 modos con un click:
+  - `➡️ Normal` (Gris) → Sin repetición
+  - `🔂 Repetir 1` (Verde) → Repite canción actual
+  - `🔁 Repetir Cola` (Verde) → Repite toda la cola
+- ✅ Actualización visual dinámica
+- **Ubicación**: `ButtonHandler.ts:392-420`
+
+### 6. **Interfaz de Botones Renovada**
+- ✅ 9 botones totales (antes: 7)
+- ✅ 4 botones dinámicos: Pause, Shuffle, Repeat, Volume
+- ✅ Función `createPlayerButtons()` unificada
+- ❌ Eliminadas: Funciones `updatePauseButton()` y `updateShuffleButton()`
+- **Beneficio**: Código más mantenible, estado sincronizado
+
+---
+
+## 🎮 Botones del Reproductor (v3.0)
+
+### **Fila 1 - Controles Principales:**
+```
+┌──────────────────┬───────────────────┬──────────────┬──────────────┐
+│ 🎵 Now Playing   │ ⏸️ Pausar /       │ ⏭️ Saltar    │ ⏹️ Detener   │
+│                  │ ▶️ Reanudar       │              │              │
+└──────────────────┴───────────────────┴──────────────┴──────────────┘
+```
+
+### **Fila 2 - Funciones Adicionales:**
+```
+┌────────┬─────────────┬──────────────┬─────────────┬────────────┐
+│ 📋     │ 🔀 Mezclar/ │ ➡️ Normal/   │ 🔊 50%      │ 🤖 IA      │
+│ Cola   │ Mezclado ✓  │ 🔂 Repetir 1/│ (Dinámico)  │            │
+│        │             │ 🔁 Repetir   │             │            │
+└────────┴─────────────┴──────────────┴─────────────┴────────────┘
+```
+
+**Botón de Volumen:** Al hacer click abre menú:
+```
+┌─────────┬─────────┬─────────┬─────────┐
+│ -10%    │ -5%     │ +5%     │ +10%    │
+└─────────┴─────────┴─────────┴─────────┘
+```
+
+---
+
+## 📁 Archivos Modificados (Sesión 11-04)
+
+### Nuevos Archivos:
+1. **src/commands/volume.ts** - Comando de volumen
+
+### Archivos Actualizados:
+1. **src/components/PlayerButtons.ts**
+   - Refactorización completa
+   - Parámetro `state?: PlayerState` para botones dinámicos
+   - Eliminadas funciones legacy
 
 2. **src/services/AudioService.ts**
-   - M�todo `play()` simplificado (solo streaming)
-   - M�todo `stop()` simplificado (sin limpieza de archivos)
-   - Nuevo m�todo `formatDuration()` helper
+   - Métodos `getVolume()` y `setVolume()`
+   - Aplicación automática de volumen a nuevas canciones
+   - Actualizado `sendPlayerButtons()` para pasar state
 
-3. **src/commands/play.ts**
-   - Soporte para playlists
-   - Detecci�n autom�tica de tipo de URL
-   - Mejor formato de mensajes
-   - Modo streaming siempre visible
+3. **src/handlers/ButtonHandler.ts**
+   - Handler `handleRepeat()` - Ciclo de modos
+   - Handler `handleVolume()` - Menú de volumen
+   - Handler `handleVolumeAdjust()` - Ajustes rápidos
+   - Actualizados todos los handlers para usar `createPlayerButtons(state)`
 
-4. **src/types/index.ts**
-   - Eliminado `filePath` de Song interface
+4. **src/commands/*.ts** (play, pause, resume, skip, stop, shuffle, repeat)
+   - Mensajes auto-eliminables con `setTimeout()`
+   - Mejor experiencia de usuario
 
----
+5. **src/types/index.ts**
+   - Agregado `volume: number` a `PlayerState`
 
-## =' Estado Actual del Bot
+6. **src/services/QueueService.ts**
+   - Volumen inicial: 50%
 
-###  Funcionando:
-- Bot conectado sin errores
-- 10 comandos cargados
-- Sistema de streaming activo
-- Listo para pruebas
+7. **src/__tests__/types.test.ts**
+   - Tests actualizados con campo `volume`
 
-### >� Por Probar:
-- [ ] Reproducci�n de video individual
-- [ ] B�squeda por texto
-- [ ] Reproducci�n de playlist completa
-- [ ] Videos de 3+ horas
-- [ ] Playlist de 300+ videos
+8. **src/index.ts**
+   - Registrado comando `volume`
+   - Total: 11 comandos
 
 ---
 
-## = Errores Resueltos
+## 📊 Comparación v2.0 vs v3.0
 
-### Error 403 de YouTube (Resuelto)
-**Antes:**
-```
-WARNING: Could not parse decipher function
-Error buscando video: MinigetError: Status code: 403
-```
-
-**Soluci�n:**
-- Migraci�n completa a `play-dl`
-- `play-dl` tiene mejor manejo de la API de YouTube
-
----
-
-## =� Comparaci�n Antes vs Ahora
-
-| Aspecto | Antes (v1.0) | Ahora (v2.0) |
+| Aspecto | v2.0 (11-03) | v3.0 (11-04) |
 |---------|--------------|--------------|
-| **Videos cortos** | Descarga local | Streaming |
-| **Videos largos** | Streaming | Streaming |
-| **Latencia inicial** | 5-30 segundos | 1-2 segundos |
-| **Uso de disco** | 20-100 MB/video | 0 MB |
-| **Playlists** | No soportado | Hasta 500 videos |
-| **L�mite duraci�n** | Ninguno oficial | Sin l�mite (3+ horas OK) |
-| **Librer�a YouTube** | ytdl-core (buggy) | play-dl (estable) |
-| **C�digo LOC** | ~350 l�neas | ~280 l�neas |
-| **Complejidad** | Alta | Media |
+| **Botones** | 7 | 9 |
+| **Botones dinámicos** | 2 | 4 |
+| **Control volumen** | ❌ | ✅ Botón + Comando |
+| **Modo repeat** | ❌ Solo comando | ✅ Botón interactivo |
+| **Mensajes temporales** | ⚠️ Persisten | ✅ Auto-eliminables |
+| **Botones duplicados** | ❌ Bug | ✅ Arreglado |
+| **Recomendaciones IA** | ⚠️ Solo título | ✅ Contexto completo |
+| **Total comandos** | 10 | 11 |
 
 ---
 
-## =� Pr�ximos Pasos Sugeridos
+## 🎯 Estado Actual del Bot (v3.0)
+
+### ✅ Funcionando:
+- Bot conectado sin errores
+- 11 comandos cargados
+- Sistema de streaming activo
+- 9 botones interactivos
+- Control de volumen completo
+- Recomendaciones IA mejoradas
+- Mensajes auto-eliminables
+- Sin duplicación de botones
+
+### 🔧 Comandos Disponibles:
+1. `!play [URL/búsqueda]` - Reproducir música (soporta playlists)
+2. `!pause` - Pausar reproducción
+3. `!resume` - Reanudar reproducción
+4. `!skip` - Saltar canción
+5. `!stop` - Detener y limpiar cola
+6. `!queue` - Ver cola (paginada)
+7. `!shuffle` - Activar/desactivar aleatorio
+8. `!repeat [none/song/queue]` - Modo repetición
+9. `!volume [0-100]` - Ajustar volumen **[NUEVO]**
+10. `!recommend` - Recomendaciones de IA
+11. `!help` - Ayuda
+
+---
+
+## 🚀 Próximos Pasos Sugeridos
 
 ### Prioridad Alta:
-1. **Probar funcionalidades nuevas**
-   - Video individual
-   - Playlist peque�a (5-10 videos)
-   - Playlist grande (100+ videos)
-   - Video largo (2+ horas)
-
-2. **Ajustar configuraci�n de calidad si es necesario**
-   - Actualmente: `quality: 2` (media-alta)
-   - Opciones: 0 (mejor) - 4 (peor)
+1. **Comando `/move` para reordenar cola** 🔜
+   - Mover canciones de posición
+   - Ejemplo: `!move 15 2` (mover canción #15 a posición #2)
+   - Útil para priorizar canciones
 
 ### Prioridad Media:
-3. **A�adir comando `/nowplaying`**
+2. **Comando `/nowplaying` mejorado**
    - Mostrar progreso actual
    - Tiempo transcurrido / total
    - Barra de progreso visual
 
-4. **Implementar comando `/volume`**
-   - Control de volumen 0-100
-   - Usar `inlineVolume: true` (ya configurado)
-
-5. **Mejorar manejo de errores**
-   - Mensaje al usuario si streaming falla
-   - Intentar siguiente canci�n autom�ticamente (ya implementado)
+3. **Búsqueda avanzada**
+   - Filtros por duración
+   - Filtros por canal
 
 ### Prioridad Baja:
-6. **Optimizaciones adicionales**
-   - Cache de b�squedas frecuentes
+4. **Optimizaciones adicionales**
+   - Cache de búsquedas frecuentes
    - Pre-carga del siguiente video
-   - Estad�sticas de uso
+   - Estadísticas de uso
 
 ---
 
-## = Notas T�cnicas
+## 🐛 Errores Resueltos (Sesión 11-04)
 
-### Configuraci�n de play-dl:
+### 1. Botones Duplicados
+**Problema:**
+```
+▶️ Reproduciendo: Song Name [Botones x1]
+▶️ Reproduciendo: Song Name [Botones x2] ❌ DUPLICADOS
+```
+
+**Solución:**
+- Eliminado envío de botones en `play.ts` (líneas 62-70, 106-115)
+- Solo `AudioService.sendPlayerButtons()` envía botones
+- **Resultado:** ✅ Un solo set de botones
+
+### 2. Mensajes Persistentes
+**Problema:**
+```
+🔍 Buscando...
+✅ Agregado a la cola: Song XYZ
+⏸️ Reproducción pausada
+🔀 Modo aleatorio activado
+... [mensajes no se borran, ensucian chat]
+```
+
+**Solución:**
 ```typescript
-// Streaming
-await play.stream(url, {
-  quality: 2  // 0=mejor, 4=peor
+const reply = await message.reply('...');
+setTimeout(() => reply.delete().catch(() => {}), 5000);
+```
+- **Resultado:** ✅ Mensajes se borran automáticamente
+
+---
+
+## 💻 Notas Técnicas (v3.0)
+
+### Control de Volumen:
+```typescript
+// Volumen se almacena en PlayerState (0-100)
+interface PlayerState {
+  volume: number; // default: 50
+  // ...
+}
+
+// Se aplica automáticamente al crear AudioResource
+const resource = createAudioResource(stream, {
+  inlineVolume: true,
 });
-
-// Playlist
-await play.playlist_info(url, {
-  incomplete: true  // Permite playlists grandes
-});
+if (resource.volume) {
+  resource.volume.setVolume(state.volume / 100); // Convertir a 0.0-1.0
+}
 ```
 
-### L�mites Configurables:
-- `maxVideos` en playlists: 500 (configurable en play.ts l�nea 35)
-- Calidad de stream: 2 (configurable en YouTubeService.ts l�nea 123)
+### Recomendaciones IA Mejoradas:
+```typescript
+const prompt = `Analiza esta canción y recomiéndame 5 similares:
+📌 Información de la canción:
+- Título completo: ${currentSong.title}
+- Artista detectado: ${extractedArtist}
+- Duración: ${durationText}
+- URL: ${currentSong.url}
+
+🎯 Criterios de similitud:
+- Mismo género musical o estilo
+- Energía/tempo similar
+- Época o era musical similar
+...`;
+```
+
+### Botones Dinámicos:
+```typescript
+// Todos los botones ahora reciben el estado completo
+export function createPlayerButtons(state?: PlayerState) {
+  // Botones se adaptan según:
+  // - state.isPaused → Pausar/Reanudar
+  // - state.options.shuffle → Mezclar/Mezclado
+  // - state.options.repeat → Normal/Repetir 1/Repetir Cola
+  // - state.volume → 🔊 XX%
+}
+```
 
 ---
 
-## =� Comandos para Depuraci�n
+## 📝 Historial de Versiones
 
-### Ver logs del bot:
+### v3.0 (2025-11-04)
+- ✅ Control de volumen (botón + comando)
+- ✅ Botón de repeat interactivo
+- ✅ Mensajes auto-eliminables
+- ✅ Arreglo de botones duplicados
+- ✅ Recomendaciones IA mejoradas
+- ✅ 9 botones totales, 4 dinámicos
+
+### v2.0 (2025-11-03)
+- ✅ Migración completa a streaming (play-dl)
+- ✅ Soporte para playlists (500 videos)
+- ✅ Videos largos (3+ horas)
+- ✅ 7 botones interactivos
+- ✅ Recomendaciones con IA
+
+### v1.0 (Inicial)
+- ✅ Sistema básico de reproducción
+- ✅ Comandos básicos (play, pause, skip, stop)
+- ⚠️ Descarga local de archivos
+- ⚠️ ytdl-core (errores 403)
+
+---
+
+## ⚙️ Configuración Actual
+
+### Límites:
+- Playlists: 500 videos (configurable en play.ts:36)
+- Calidad stream: 2/4 (media-alta, en YouTubeService.ts)
+- Volumen default: 50%
+- Cola paginada: 10 canciones/página
+
+### Dependencias clave:
+- `play-dl` - Streaming de YouTube
+- `@discordjs/voice` - Audio en Discord
+- `@google/generative-ai` - Recomendaciones (Gemini 2.5 Flash)
+- `discord.js` v14
+
+---
+
+## 📚 Documentación de Comandos
+
+### Comando `/volume`:
 ```bash
-npm run dev
+!volume          # Ver volumen actual
+!volume 50       # Establecer volumen a 50%
+!vol 80          # Alias: vol
+!v 30            # Alias: v
 ```
 
-### Ver salida en vivo:
-El bot est� corriendo en background con ID: `dd05a1`
-
-### Detener bot:
+### Comando `/repeat`:
 ```bash
-# Terminar proceso actual
-Ctrl+C en la terminal donde corre npm run dev
+!repeat none     # Sin repetición
+!repeat song     # Repetir canción actual
+!repeat queue    # Repetir cola completa
+```
+
+### Comando `/play`:
+```bash
+!play despacito                              # Búsqueda
+!play https://youtube.com/watch?v=...        # Video individual
+!play https://youtube.com/playlist?list=...  # Playlist completa
 ```
 
 ---
 
-## � Advertencias
-
-1. **play-dl puede requerir cookies de YouTube en el futuro**
-   - Si YouTube bloquea: necesitar�s configurar cookies
-   - Documentaci�n: https://github.com/play-dl/play-dl
-
-2. **Playlists muy grandes (500+) pueden tardar**
-   - La carga de playlist es s�ncrona
-   - Considera a�adir mensaje de "Cargando..." si tarda >5 seg
-
-3. **Videos en vivo no soportados**
-   - play-dl no soporta streams en vivo de YouTube
-   - A�adir validaci�n si es necesario
-
----
-
-## =� Ideas Futuras
-
-1. **Pre-carga inteligente**
-   - Cargar siguiente canci�n mientras reproduce actual
-   - Reducir latencia entre canciones
-
-2. **Playlist incremental**
-   - Cargar primeros 50 videos inmediatamente
-   - Continuar cargando en background
-
-3. **Sistema de cache**
-   - Cachear metadatos de b�squedas frecuentes
-   - Reducir llamadas a API de YouTube
-
-4. **Dashboard web**
-   - Ver cola en tiempo real
-   - Control remoto del bot
-   - Estad�sticas de uso
-
----
-
-**�ltima sesi�n:** 2025-11-03 01:45 UTC
-**Duraci�n:** ~15 minutos
-**Estado:**  Bot funcionando, listo para pruebas
-**Bot ID actual:** dd05a1
+**Última sesión:** 2025-11-04
+**Duración:** ~45 minutos
+**Estado:** ✅ Bot funcionando perfectamente
+**Versión:** v3.0
+**Total comandos:** 11
+**Total botones:** 9 (4 dinámicos)
+**Build status:** ✅ Sin errores

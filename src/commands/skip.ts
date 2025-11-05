@@ -15,11 +15,13 @@ export const skip: Command = {
     const state = queueService.getQueue(message.guildId);
 
     if (!state.isPlaying) {
-      await message.reply('No hay nada reproduciéndose actualmente.');
+      const reply = await message.reply('No hay nada reproduciéndose actualmente.');
+      setTimeout(() => reply.delete().catch(() => {}), 5000);
       return;
     }
 
     audioService.skip(message.guildId);
-    await message.reply('⏭️ Canción saltada.');
+    const reply = await message.reply('⏭️ Canción saltada.');
+    setTimeout(() => reply.delete().catch(() => {}), 5000);
   },
 };

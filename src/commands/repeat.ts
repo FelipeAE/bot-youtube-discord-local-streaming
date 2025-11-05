@@ -15,12 +15,13 @@ export const repeat: Command = {
     const mode = args[0]?.toLowerCase();
 
     if (!mode || !['none', 'song', 'queue'].includes(mode)) {
-      await message.reply(
+      const reply = await message.reply(
         'Por favor especifica un modo válido:\n' +
         '`!repeat none` - Sin repetición\n' +
         '`!repeat song` - Repetir canción actual\n' +
         '`!repeat queue` - Repetir cola completa'
       );
+      setTimeout(() => reply.delete().catch(() => {}), 10000);
       return;
     }
 
@@ -32,6 +33,7 @@ export const repeat: Command = {
       queue: '🔁',
     };
 
-    await message.reply(`${emojis[mode as keyof typeof emojis]} Modo de repetición: **${mode}**`);
+    const reply = await message.reply(`${emojis[mode as keyof typeof emojis]} Modo de repetición: **${mode}**`);
+    setTimeout(() => reply.delete().catch(() => {}), 5000);
   },
 };

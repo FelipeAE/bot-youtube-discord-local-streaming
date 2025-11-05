@@ -71,11 +71,13 @@ describe('TypeScript Types', () => {
           repeat: 'none',
           shuffle: false,
         },
+        volume: 50,
       };
 
       expect(state.isPlaying).toBe(false);
       expect(state.currentSong).toBeNull();
       expect(state.queue).toEqual([]);
+      expect(state.volume).toBe(50);
     });
 
     it('debería aceptar un estado con canción actual', () => {
@@ -95,11 +97,13 @@ describe('TypeScript Types', () => {
           repeat: 'song',
           shuffle: true,
         },
+        volume: 75,
       };
 
       expect(state.isPlaying).toBe(true);
       expect(state.currentSong).toEqual(mockSong);
       expect(state.options.shuffle).toBe(true);
+      expect(state.volume).toBe(75);
     });
   });
 

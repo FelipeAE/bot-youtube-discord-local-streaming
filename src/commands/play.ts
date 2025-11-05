@@ -31,12 +31,13 @@ export const play: Command = {
       const urlType = youtubeService.isValidYouTubeURL(query);
 
       if (urlType === 'playlist') {
-        await message.reply('📋 Cargando playlist...');
+        const loadingMessage = await message.reply('📋 Cargando playlist...');
 
         const songs = await youtubeService.getPlaylistVideos(query, message.author.tag, 500);
 
         if (!songs || songs.length === 0) {
-          await message.reply('No se pudieron obtener videos de la playlist.');
+          await loadingMessage.edit('❌ No se pudieron obtener videos de la playlist.');
+          setTimeout(() => loadingMessage.delete().catch(() => {}), 5000);
           return;
         }
 
@@ -47,37 +48,33 @@ export const play: Command = {
         const hours = Math.floor(totalDuration / 3600);
         const minutes = Math.floor((totalDuration % 3600) / 60);
 
-        await message.reply(
-          `📋 **Playlist agregada:**\n` +
+        await loadingMessage.edit(
+          `✅ **Playlist agregada:**\n` +
           `🎵 ${songs.length} canciones\n` +
           `⏱️ Duración total: ${hours > 0 ? `${hours}h ` : ''}${minutes}min\n` +
           `👤 Solicitado por: ${message.author.tag}`
         );
 
+        // Borrar mensaje después de 10 segundos
+        setTimeout(() => loadingMessage.delete().catch(() => {}), 10000);
+
         if (!state.isPlaying) {
           await audioService.joinChannel(voiceChannel);
+
+          // Guardar referencia del canal para que AudioService envíe los botones
+          state.playerChannelId = message.channel.id;
+
           await audioService.play(guildId);
-
-          if (message.channel.isSendable()) {
-            const playerButtons = createPlayerButtons();
-            const playerMessage = await message.channel.send({
-              content: `▶️ Reproduciendo: **${songs[0].title}**`,
-              components: playerButtons
-            });
-
-            // Guardar referencia del mensaje de botones
-            state.playerMessageId = playerMessage.id;
-            state.playerChannelId = message.channel.id;
-          }
         }
       } else {
         // Video individual o búsqueda
-        await message.reply('🔍 Buscando...');
+        const searchMessage = await message.reply('🔍 Buscando...');
 
         const song = await youtubeService.searchVideo(query, message.author.tag);
 
         if (!song) {
-          await message.reply('No se encontraron resultados. Intenta con otro término de búsqueda.');
+          await searchMessage.edit('❌ No se encontraron resultados. Intenta con otro término de búsqueda.');
+          setTimeout(() => searchMessage.delete().catch(() => {}), 5000);
           return;
         }
 
@@ -91,28 +88,23 @@ export const play: Command = {
           ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
           : `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-        await message.reply(
-          `🎵 **Agregado a la cola:** ${song.title}\n` +
+        await searchMessage.edit(
+          `✅ **Agregado a la cola:** ${song.title}\n` +
           `⏱️ Duración: ${durationText}\n` +
           `📡 Modo: Streaming\n` +
           `👤 Solicitado por: ${song.requestedBy}`
         );
 
+        // Borrar mensaje después de 8 segundos
+        setTimeout(() => searchMessage.delete().catch(() => {}), 8000);
+
         if (!state.isPlaying) {
           await audioService.joinChannel(voiceChannel);
+
+          // Guardar referencia del canal para que AudioService envíe los botones
+          state.playerChannelId = message.channel.id;
+
           await audioService.play(guildId);
-
-          if (message.channel.isSendable()) {
-            const playerButtons = createPlayerButtons();
-            const playerMessage = await message.channel.send({
-              content: `▶️ Reproduciendo: **${song.title}**`,
-              components: playerButtons
-            });
-
-            // Guardar referencia del mensaje de botones
-            state.playerMessageId = playerMessage.id;
-            state.playerChannelId = message.channel.id;
-          }
         }
       }
     } catch (error) {
