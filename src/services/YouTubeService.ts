@@ -175,15 +175,71 @@ export class YouTubeService {
       });
 
       const audioStream = stream.stdout as Readable;
+      const stderrChunks: string[] = [];
 
-      // Manejar errores del stream para evitar crashes
+      // Capturar stderr para detectar errores de restricción de edad
+      if (stream.stderr) {
+        stream.stderr.on('data', (chunk) => {
+          stderrChunks.push(chunk.toString());
+        });
+      }
+
+      // Manejar errores del proceso
+      stream.on('error', (error: any) => {
+        const stderr = stderrChunks.join('');
+
+        // Detectar video con restricción de edad
+        if (stderr.includes('Sign in to confirm your age') ||
+            stderr.includes('age-restricted') ||
+            stderr.includes('inappropriate for some users')) {
+          const ageError = new Error('Este video tiene restricción de edad y requiere autenticación');
+          (ageError as any).code = 'AGE_RESTRICTED';
+          throw ageError;
+        }
+
+        // Detectar video no disponible
+        if (stderr.includes('Video unavailable') ||
+            stderr.includes('This video is unavailable')) {
+          const unavailableError = new Error('Este video no está disponible');
+          (unavailableError as any).code = 'VIDEO_UNAVAILABLE';
+          throw unavailableError;
+        }
+
+        // Error genérico
+        console.error('⚠️ Error en proceso yt-dlp:', error.message);
+        console.error('📋 stderr:', stderr);
+        throw error;
+      });
+
+      // Manejar errores del stream
       audioStream.on('error', (error) => {
         console.error('⚠️ Error en stream de yt-dlp:', error.message);
       });
 
       return audioStream;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creando stream con yt-dlp:', error);
+
+      // Si es un error de child process, extraer información útil
+      if (error.stderr) {
+        const stderr = error.stderr;
+
+        // Detectar restricción de edad
+        if (stderr.includes('Sign in to confirm your age') ||
+            stderr.includes('age-restricted')) {
+          const ageError = new Error('Este video tiene restricción de edad y requiere autenticación');
+          (ageError as any).code = 'AGE_RESTRICTED';
+          throw ageError;
+        }
+
+        // Detectar video no disponible
+        if (stderr.includes('Video unavailable')) {
+          const unavailableError = new Error('Este video no está disponible');
+          (unavailableError as any).code = 'VIDEO_UNAVAILABLE';
+          throw unavailableError;
+        }
+      }
+
       throw error;
     }
   }

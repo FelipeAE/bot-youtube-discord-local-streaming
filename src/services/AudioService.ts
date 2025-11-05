@@ -177,12 +177,41 @@ export class AudioService {
 
       // Enviar botones del reproductor para la nueva canción
       await this.sendPlayerButtons(guildId, nextSong);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Error al crear stream para: ${nextSong.title}`, error);
+
+      // Manejar errores específicos
+      let errorMessage = '';
+      if (error.code === 'AGE_RESTRICTED') {
+        errorMessage = `⚠️ **Video con restricción de edad saltado:**\n"${nextSong.title}"\n\n` +
+                      `Este video requiere autenticación de YouTube. Configurando cookies se puede reproducir.`;
+      } else if (error.code === 'VIDEO_UNAVAILABLE') {
+        errorMessage = `⚠️ **Video no disponible saltado:**\n"${nextSong.title}"`;
+      } else {
+        errorMessage = `❌ **Error reproduciendo:**\n"${nextSong.title}"\n` +
+                      `Saltando a la siguiente canción...`;
+      }
+
+      // Enviar mensaje al canal si existe
+      if (state.playerChannelId && this.client) {
+        try {
+          const channel = await this.client.channels.fetch(state.playerChannelId);
+          if (channel && channel.isTextBased()) {
+            const msg = await (channel as any).send(errorMessage);
+            // Borrar mensaje después de 10 segundos
+            setTimeout(() => msg.delete().catch(() => {}), 10000);
+          }
+        } catch (msgError) {
+          console.error('No se pudo enviar mensaje de error:', msgError);
+        }
+      }
+
       // Intentar siguiente canción
-      this.play(guildId).catch(err => {
-        console.error('Error al intentar siguiente canción:', err);
-      });
+      setTimeout(() => {
+        this.play(guildId).catch(err => {
+          console.error('Error al intentar siguiente canción:', err);
+        });
+      }, 1000);
     }
   }
 
