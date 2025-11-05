@@ -82,6 +82,31 @@ export class QueueService {
     state.options.repeat = mode;
   }
 
+  moveSong(guildId: string, fromPosition: number, toPosition: number): boolean {
+    const state = this.getQueue(guildId);
+
+    // Validar rango (posiciones empiezan en 1)
+    if (fromPosition < 1 || fromPosition > state.queue.length) {
+      return false;
+    }
+
+    if (toPosition < 1 || toPosition > state.queue.length) {
+      return false;
+    }
+
+    // Convertir a índices 0-based
+    const fromIndex = fromPosition - 1;
+    const toIndex = toPosition - 1;
+
+    // Extraer la canción de la posición origen
+    const [song] = state.queue.splice(fromIndex, 1);
+
+    // Insertar en la posición destino
+    state.queue.splice(toIndex, 0, song);
+
+    return true;
+  }
+
   deleteQueue(guildId: string): void {
     this.queues.delete(guildId);
   }

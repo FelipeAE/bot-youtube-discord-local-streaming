@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add v3.0 - Volume control, Repeat button, and UX improvements\n\nImplemented comprehensive volume control, interactive repeat button, and \nmajor UX improvements to fix duplicate buttons and add auto-deleting messages.\n\n## New Features:\n- Volume control with interactive button and command (!volume 0-100)\n- Interactive repeat button cycling through none/song/queue modes\n- Auto-deleting temporary messages (5-10 seconds)\n- Enhanced AI recommendations with full context (title, artist, duration, URL)\n\n## Bug Fixes:\n- Fixed duplicate player buttons appearing twice\n- Fixed persistent messages cluttering chat\n\n## Changes:\n- Refactored PlayerButtons.ts to use unified createPlayerButtons(state)\n- Added volume to PlayerState (default: 50%)\n- Updated all button handlers to use dynamic state\n- Removed legacy updatePauseButton() and updateShuffleButton() functions\n\n## UI Improvements:\n- 9 total buttons (up from 7)\n- 4 dynamic buttons: Pause, Shuffle, Repeat, Volume\n- Volume popup menu with quick adjustments (-10%, -5%, +5%, +10%)\n- Repeat button shows current mode with colored indicators\n\n## Technical:\n- New file: src/commands/volume.ts\n- Updated: AudioService, ButtonHandler, PlayerButtons, QueueService\n- Updated: All command files with auto-delete setTimeout()\n- Updated: Tests with volume field\n- Total commands: 11 (added volume command)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
