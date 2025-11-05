@@ -5,3 +5,8 @@ temp/
 *.log
 .DS_Store
 .bot.pid
+
+# YouTube cookies (contiene información de sesión privada)
+cookies.txt
+*.cookies
+youtube.com_cookies.txt
