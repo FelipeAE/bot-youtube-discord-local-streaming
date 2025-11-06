@@ -20,8 +20,26 @@ export const skip: Command = {
       return;
     }
 
+    const currentSong = state.currentSong;
+
+    // Verificar si hay más canciones en la cola (considerando repeat)
+    const hasNextSong = state.queue.length > 0 ||
+                        state.options.repeat === 'song' ||
+                        state.options.repeat === 'queue';
+
+    if (!hasNextSong) {
+      // No hay más canciones - detener y desconectar
+      audioService.skip(message.guildId);
+      const reply = await message.reply(
+        `⏭️ **Saltado:** ${currentSong?.title || 'Canción desconocida'}\n\n⚠️ No hay más canciones en la cola. El bot se detendrá.`
+      );
+      setTimeout(() => reply.delete().catch(() => {}), 8000);
+      return;
+    }
+
+    // Hay más canciones - skip normal
     audioService.skip(message.guildId);
-    const reply = await message.reply('⏭️ Canción saltada.');
+    const reply = await message.reply(`⏭️ **Saltado:** ${currentSong?.title || 'Canción desconocida'}`);
     setTimeout(() => reply.delete().catch(() => {}), 5000);
   },
 };

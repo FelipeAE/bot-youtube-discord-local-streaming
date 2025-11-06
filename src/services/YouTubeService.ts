@@ -182,8 +182,14 @@ export class YouTubeService {
         ]
       };
 
-      // Solo agregar cookies si el archivo existe
-      if (hasCookies) {
+      // Priorizar cookies del navegador (siempre actualizadas)
+      // Si falla, intentar con archivo cookies.txt
+      if (process.env.YOUTUBE_COOKIES_FROM_BROWSER) {
+        // Usar cookies directamente del navegador (ej: "chrome", "firefox", "edge")
+        options.cookiesFromBrowser = process.env.YOUTUBE_COOKIES_FROM_BROWSER;
+        console.log(`🍪 Usando cookies desde navegador: ${process.env.YOUTUBE_COOKIES_FROM_BROWSER}`);
+      } else if (hasCookies) {
+        // Fallback: usar archivo cookies.txt
         options.cookies = cookiesPath;
       }
 

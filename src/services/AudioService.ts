@@ -175,6 +175,11 @@ export class AudioService {
 
       player.play(resource);
 
+      // Registrar timestamp de inicio de reproducción
+      state.songStartTime = Date.now();
+      state.pausedAt = undefined;
+      state.totalPausedTime = 0;
+
       // Enviar botones del reproductor para la nueva canción
       await this.sendPlayerButtons(guildId, nextSong);
     } catch (error: any) {
@@ -239,6 +244,7 @@ export class AudioService {
     if (player && state.isPlaying && !state.isPaused) {
       player.pause();
       state.isPaused = true;
+      state.pausedAt = Date.now(); // Registrar cuándo se pausó
       return true;
     }
     return false;
@@ -251,6 +257,14 @@ export class AudioService {
     if (player && state.isPaused) {
       player.unpause();
       state.isPaused = false;
+
+      // Calcular tiempo en pausa y acumularlo
+      if (state.pausedAt && state.songStartTime) {
+        const pauseDuration = Date.now() - state.pausedAt;
+        state.totalPausedTime = (state.totalPausedTime || 0) + pauseDuration;
+      }
+      state.pausedAt = undefined;
+
       return true;
     }
     return false;
@@ -281,6 +295,9 @@ export class AudioService {
     state.isPlaying = false;
     state.isPaused = false;
     state.currentSong = null;
+    state.songStartTime = undefined;
+    state.pausedAt = undefined;
+    state.totalPausedTime = 0;
   }
 
   getVolume(guildId: string): number {

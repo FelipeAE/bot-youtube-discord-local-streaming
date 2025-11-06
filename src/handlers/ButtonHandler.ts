@@ -108,12 +108,90 @@ export class ButtonHandler {
     }
 
     const song = state.currentSong;
-    const duration = this.formatDuration(song.duration);
-
-    // Defer para tener más tiempo
-    await interaction.deferReply({ ephemeral: true });
 
     try {
+      // Defer para tener más tiempo
+      await interaction.deferReply({ ephemeral: true });
+
+      // Importar utilidades de progreso
+      const { formatTime, createProgressBar, calculateElapsedTime } = await import('../utils/progressBar.js');
+
+      // Calcular tiempo transcurrido
+      const elapsedSeconds = calculateElapsedTime(
+        state.songStartTime,
+        state.isPaused,
+        state.pausedAt,
+        state.totalPausedTime
+      );
+
+      // Asegurar que el tiempo transcurrido no exceda la duración
+      const clampedElapsed = Math.min(elapsedSeconds, song.duration);
+
+      // Formatear tiempos
+      const currentTime = formatTime(clampedElapsed);
+      const totalTime = formatTime(song.duration);
+
+      // Crear barra de progreso
+      const progressBar = createProgressBar(clampedElapsed, song.duration);
+
+      // Crear embed
+      const { EmbedBuilder } = await import('discord.js');
+      const embed = new EmbedBuilder()
+        .setColor(state.isPaused ? '#FFA500' : '#0099ff') // Naranja si pausado, azul si reproduciéndose
+        .setTitle('🎵 Reproduciendo Ahora')
+        .setDescription(`**${song.title}**`)
+        .addFields(
+          {
+            name: '⏱️ Progreso',
+            value: `\`${currentTime}\` ${progressBar} \`${totalTime}\``,
+            inline: false
+          },
+          {
+            name: '👤 Solicitado por',
+            value: song.requestedBy,
+            inline: true
+          },
+          {
+            name: '🔊 Volumen',
+            value: `${state.volume}%`,
+            inline: true
+          }
+        )
+        .setTimestamp();
+
+      // Agregar thumbnail si existe
+      if (song.thumbnail) {
+        embed.setThumbnail(song.thumbnail);
+      }
+
+      // Agregar URL como campo
+      embed.addFields({
+        name: '🔗 URL',
+        value: song.url,
+        inline: false
+      });
+
+      // Agregar footer con estado actual
+      const statusEmojis: string[] = [];
+
+      if (state.isPaused) {
+        statusEmojis.push('⏸️ Pausado');
+      }
+
+      if (state.options.repeat === 'song') {
+        statusEmojis.push('🔂 Repetir 1');
+      } else if (state.options.repeat === 'queue') {
+        statusEmojis.push('🔁 Repetir Cola');
+      }
+
+      if (state.options.shuffle) {
+        statusEmojis.push('🔀 Aleatorio');
+      }
+
+      if (statusEmojis.length > 0) {
+        embed.setFooter({ text: `Estado: ${statusEmojis.join(' • ')}` });
+      }
+
       // Borrar el mensaje anterior de botones si existe
       if (state.playerMessageId && state.playerChannelId) {
         try {
@@ -128,27 +206,28 @@ export class ButtonHandler {
         }
       }
 
-      // Enviar nuevo mensaje con botones
+      // Enviar nuevo mensaje con botones actualizados
       const channel = interaction.channel;
       if (channel && channel.isSendable()) {
+        const duration = this.formatDuration(song.duration);
         const playerButtons = createPlayerButtons(state);
 
         const playerMessage = await channel.send({
-          content: `🎵 **Now Playing:**\n**${song.title}**\n⏱️ Duración: ${duration}\n👤 Solicitado por: ${song.requestedBy}`,
+          content: `▶️ **Reproduciendo:**\n**${song.title}**\n⏱️ Duración: ${duration}\n👤 Solicitado por: ${song.requestedBy}`,
           components: playerButtons
         });
 
         // Actualizar referencia del mensaje de botones
         state.playerMessageId = playerMessage.id;
         state.playerChannelId = channel.id;
-
-        // Responder a la interacción
-        await interaction.editReply({ content: '✅ Botones actualizados' });
       }
+
+      // Responder con el embed (ephemeral para no llenar el chat)
+      await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error('Error en handleNowPlaying:', error);
       try {
-        await interaction.editReply({ content: '❌ Error al actualizar los botones' });
+        await interaction.editReply({ content: '❌ Error al mostrar información de reproducción' });
       } catch (e) {
         // Ya fue manejado
       }
@@ -191,7 +270,40 @@ export class ButtonHandler {
 
     const currentSong = state.currentSong;
 
-    // Defer para tener más tiempo de procesamiento
+    // Verificar si hay más canciones en la cola (considerando repeat)
+    const hasNextSong = state.queue.length > 0 ||
+                        state.options.repeat === 'song' ||
+                        state.options.repeat === 'queue';
+
+    if (!hasNextSong) {
+      // No hay más canciones - preguntar si quiere detener o quedarse conectado
+      await interaction.reply({
+        content: `⏭️ **Saltado:** ${currentSong?.title || 'Canción desconocida'}\n\n⚠️ No hay más canciones en la cola. El bot se detendrá.`,
+        ephemeral: false
+      });
+
+      // Detener reproducción y desconectar
+      this.audioService.stop(guildId);
+      this.queueService.clearQueue(guildId);
+
+      // Borrar mensaje de botones
+      if (state.playerMessageId && state.playerChannelId) {
+        try {
+          const channel = await this.client.channels.fetch(state.playerChannelId);
+          if (channel && channel.isTextBased()) {
+            const oldMessage = await (channel as any).messages.fetch(state.playerMessageId);
+            await oldMessage.delete();
+            state.playerMessageId = undefined;
+          }
+        } catch (error) {
+          console.log('⚠️ No se pudo borrar el mensaje anterior');
+        }
+      }
+
+      return;
+    }
+
+    // Hay más canciones - proceder con skip normal
     await interaction.deferReply({ ephemeral: false });
 
     try {

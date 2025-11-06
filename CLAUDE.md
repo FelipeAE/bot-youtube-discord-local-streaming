@@ -1,12 +1,298 @@
 # Resumen de Cambios Recientes - Bot de Música Discord
 
-## Última Actualización: 2025-11-04
+## Última Actualización: 2025-11-06
 
-### 🎉 Version 3.0 - Sistema de Control Mejorado
+### 🎉 Version 3.5 - Now Playing con Progreso & Cookies Mejoradas
 
-Se implementaron mejoras significativas en UX, controles interactivos y sistema de recomendaciones.
+Se implementó el sistema de progreso en tiempo real y sistema de cookies automático desde navegador.
 
 ---
+
+## ✅ Cambios Implementados (Sesión 2025-11-06)
+
+### 1. **Comando NowPlaying con Barra de Progreso** 🎵
+- ✅ Nuevo comando: `!nowplaying` (aliases: `!np`, `!current`)
+- ✅ Muestra tiempo transcurrido con barra visual: `2:30 [▓▓▓▓▓▓░░░░] 60% 5:00`
+- ✅ Embed con thumbnail, volumen actual, estado (pausado/repeat/shuffle)
+- ✅ Color dinámico: 🔵 Azul (reproduciéndose) / 🟠 Naranja (pausado)
+- ✅ Cálculo preciso considerando pausas acumuladas
+- **Archivos nuevos**:
+  - `src/commands/nowplaying.ts` - Comando principal
+  - `src/utils/progressBar.ts` - Utilidades de formato y progreso
+- **Archivos modificados**:
+  - `src/types/index.ts` - Agregados: `songStartTime`, `pausedAt`, `totalPausedTime`
+  - `src/services/AudioService.ts` - Rastreo de timestamps en play/pause/resume/stop
+  - `src/index.ts` - Comando registrado (total: 13 comandos)
+
+### 2. **Botón Now Playing Actualizado** 🎵
+- ✅ Ahora muestra el mismo embed con progreso que el comando
+- ✅ **ADEMÁS** regenera los botones del reproductor
+- ✅ Embed es ephemeral (solo lo ve quien hace click)
+- ✅ Botones se actualizan en el chat principal
+- **Beneficio**: Progreso en tiempo real + botones sincronizados
+
+### 3. **Skip Mejorado (Comando y Botón)** ⏭️
+- ✅ Verifica si hay más canciones antes de hacer skip
+- ✅ Considera modos repeat (song/queue)
+- ✅ Muestra nombre de la canción saltada
+- ✅ Si NO hay más canciones:
+  - Muestra mensaje: "⚠️ No hay más canciones. El bot se detendrá."
+  - Detiene reproducción y desconecta del canal
+  - Limpia la cola
+- ✅ Si SÍ hay más canciones: Skip normal
+- **Archivos modificados**:
+  - `src/commands/skip.ts` - Lógica de verificación de cola
+  - `src/handlers/ButtonHandler.ts` - Mismo comportamiento en botón
+
+### 4. **Sistema de Cookies Automático** 🍪
+- ✅ Prioriza cookies **directamente del navegador** (siempre actualizadas)
+- ✅ Fallback a `cookies.txt` si no está configurado
+- ✅ No requiere exportar manualmente
+- ✅ Nunca expiran (usa sesión actual del navegador)
+- ✅ Configuración en `.env`:
+  ```env
+  YOUTUBE_COOKIES_FROM_BROWSER=firefox  # chrome, firefox, edge, opera, brave
+  ```
+- **Archivos modificados**:
+  - `src/services/YouTubeService.ts` - Soporte para `cookiesFromBrowser`
+  - `.env` - Nueva variable de entorno
+
+### 5. **Consistencia Comando-Botón**
+- ✅ Todos los botones ahora tienen el mismo comportamiento que sus comandos
+- ✅ Skip: Verifica cola en ambos
+- ✅ Now Playing: Muestra progreso + regenera botones
+- ✅ Pause/Resume: Actualizan timestamps correctamente
+
+---
+
+## 🎮 Comandos Actualizados (v3.5)
+
+### Comando `!nowplaying` **[NUEVO]**
+```bash
+!nowplaying   # Comando completo
+!np           # Alias corto
+!current      # Alias alternativo
+```
+
+**Muestra:**
+- 🎵 Título de la canción (con thumbnail)
+- ⏱️ Progreso visual: `2:30 [▓▓▓▓▓▓░░░░] 60% 5:00`
+- 👤 Usuario que la pidió
+- 🔊 Volumen actual (0-100%)
+- 🔗 URL del video
+- 📌 Estado: Pausado, Repetir 1, Repetir Cola, Aleatorio
+
+### Comando `!skip` **[MEJORADO]**
+```bash
+!skip         # Saltar canción actual
+!s            # Alias corto
+!next         # Alias alternativo
+```
+
+**Nuevo comportamiento:**
+- ✅ Muestra nombre de canción saltada
+- ✅ Verifica si hay más canciones
+- ✅ Si no hay más: Avisa y detiene el bot
+
+---
+
+## 📊 Comparación v3.0 vs v3.5
+
+| Aspecto | v3.0 (11-04) | v3.5 (11-06) |
+|---------|--------------|--------------|
+| **Comandos totales** | 12 | 13 |
+| **Now Playing** | ❌ Solo botón básico | ✅ Comando + Botón con progreso |
+| **Progreso en tiempo real** | ❌ | ✅ Barra visual + timestamps |
+| **Skip inteligente** | ⚠️ Básico | ✅ Verifica cola y repeat |
+| **Sistema de cookies** | ⚠️ Archivo estático | ✅ Desde navegador (auto-actualizado) |
+| **Botón-Comando consistencia** | ⚠️ Parcial | ✅ 100% sincronizados |
+
+---
+
+## 🎯 Estado Actual del Bot (v3.5)
+
+### ✅ Funcionando:
+- Bot conectado sin errores
+- 13 comandos cargados
+- Sistema de streaming activo
+- 9 botones interactivos (4 dinámicos)
+- Control de volumen completo
+- Recomendaciones IA mejoradas
+- **Progreso en tiempo real** ⭐ NUEVO
+- **Cookies automáticas desde navegador** ⭐ NUEVO
+- **Skip inteligente** ⭐ NUEVO
+
+### 🔧 Comandos Disponibles:
+1. `!play [URL/búsqueda]` - Reproducir música (soporta playlists)
+2. `!pause` - Pausar reproducción
+3. `!resume` - Reanudar reproducción
+4. `!skip` - Saltar canción ⭐ MEJORADO
+5. `!stop` - Detener y limpiar cola
+6. `!queue` - Ver cola (paginada)
+7. `!shuffle` - Activar/desactivar aleatorio
+8. `!repeat [none/song/queue]` - Modo repetición
+9. `!volume [0-100]` - Ajustar volumen
+10. `!move <pos1> <pos2>` - Reordenar cola
+11. `!nowplaying` - Ver progreso actual ⭐ NUEVO
+12. `!recommend` - Recomendaciones de IA
+13. `!help` - Ayuda
+
+---
+
+## 🚀 Próximos Pasos Sugeridos
+
+### Prioridad Alta (Próxima Sesión):
+1. **Sistema de Favoritos** 🔜
+   - Database SQLite con `better-sqlite3`
+   - Comandos: `!favorite`, `!favorites`, `!unfavorite`, `!playfavorite`
+   - Persistencia por usuario y servidor
+   - Lista paginada de favoritos
+   - Estimado: ~25 horas (2-3 sesiones)
+
+### Prioridad Media:
+2. **Seek Command** (Opcional - Técnicamente limitado)
+   - Reinicio desde timestamp (no true seeking)
+   - Requiere re-arquitectura del streaming
+   - Estimado: ~15 horas
+
+3. **Búsqueda avanzada**
+   - Filtros por duración
+   - Filtros por canal
+
+### Prioridad Baja:
+4. **Integraciones externas**
+   - Spotify (solo metadata, reproducción desde YouTube)
+   - SoundCloud
+   - Bandcamp
+
+---
+
+## 💻 Notas Técnicas (v3.5)
+
+### Sistema de Progreso:
+```typescript
+// Timestamps en PlayerState
+interface PlayerState {
+  songStartTime?: number;      // Date.now() cuando empezó la canción
+  pausedAt?: number;            // Date.now() cuando se pausó
+  totalPausedTime?: number;     // Tiempo acumulado en pausa (ms)
+  // ...
+}
+
+// Cálculo del progreso
+const elapsed = (Date.now() - songStartTime) - totalPausedTime;
+const progress = elapsed / (duration * 1000);
+```
+
+### Sistema de Cookies desde Navegador:
+```typescript
+// YouTubeService.ts
+if (process.env.YOUTUBE_COOKIES_FROM_BROWSER) {
+  options.cookiesFromBrowser = process.env.YOUTUBE_COOKIES_FROM_BROWSER;
+  // yt-dlp lee cookies directamente del navegador
+} else if (hasCookies) {
+  options.cookies = cookiesPath; // Fallback a cookies.txt
+}
+```
+
+### Skip Inteligente:
+```typescript
+// Verificar si hay siguiente canción
+const hasNextSong = state.queue.length > 0 ||
+                    state.options.repeat === 'song' ||
+                    state.options.repeat === 'queue';
+
+if (!hasNextSong) {
+  // Detener y desconectar
+  audioService.stop(guildId);
+  queueService.clearQueue(guildId);
+}
+```
+
+---
+
+## 📁 Archivos Modificados (Sesión 11-06)
+
+### Nuevos Archivos:
+1. **src/commands/nowplaying.ts** - Comando con progreso
+2. **src/utils/progressBar.ts** - Utilidades de formato
+
+### Archivos Actualizados:
+1. **src/types/index.ts**
+   - Agregados campos: `songStartTime`, `pausedAt`, `totalPausedTime`
+
+2. **src/services/AudioService.ts**
+   - `play()`: Registra `songStartTime`, resetea pausas
+   - `pause()`: Registra `pausedAt`
+   - `resume()`: Calcula y acumula `totalPausedTime`
+   - `stop()`: Resetea todos los timestamps
+
+3. **src/services/YouTubeService.ts**
+   - Soporte para `cookiesFromBrowser` (lee desde navegador)
+   - Fallback a `cookies.txt`
+
+4. **src/handlers/ButtonHandler.ts**
+   - `handleNowPlaying()`: Muestra embed con progreso + regenera botones
+   - `handleSkip()`: Verifica cola antes de skip
+
+5. **src/commands/skip.ts**
+   - Verifica cola y repeat antes de skip
+   - Mensaje informativo si no hay más canciones
+
+6. **src/index.ts**
+   - Registrado comando `nowplaying`
+   - Total: 13 comandos
+
+7. **.env**
+   - Agregada variable: `YOUTUBE_COOKIES_FROM_BROWSER=firefox`
+
+---
+
+## 📚 Uso del Sistema de Cookies
+
+### Configuración Actual (Firefox):
+```env
+YOUTUBE_COOKIES_FROM_BROWSER=firefox
+```
+
+### Cambiar Navegador:
+```env
+# Chrome
+YOUTUBE_COOKIES_FROM_BROWSER=chrome
+
+# Microsoft Edge
+YOUTUBE_COOKIES_FROM_BROWSER=edge
+
+# Opera
+YOUTUBE_COOKIES_FROM_BROWSER=opera
+
+# Brave
+YOUTUBE_COOKIES_FROM_BROWSER=brave
+```
+
+### Usar cookies.txt en lugar del navegador:
+```env
+# Comentar la línea
+# YOUTUBE_COOKIES_FROM_BROWSER=firefox
+```
+
+### Requisitos:
+- ✅ Estar logeado en YouTube en el navegador especificado
+- ✅ Cerrar el navegador antes de ejecutar el bot (acceso exclusivo)
+- ✅ Mantener sesión activa de YouTube
+
+---
+
+## 📝 Historial de Versiones
+
+### v3.5 (2025-11-06) ⭐ ACTUAL
+- ✅ Comando `!nowplaying` con barra de progreso
+- ✅ Botón Now Playing regenera botones
+- ✅ Skip inteligente (verifica cola)
+- ✅ Sistema de cookies desde navegador
+- ✅ 13 comandos totales
+
+### v3.0 (2025-11-04)
 
 ## ✅ Cambios Implementados (Sesión 2025-11-04)
 
