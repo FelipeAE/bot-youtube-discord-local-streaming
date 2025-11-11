@@ -79,6 +79,40 @@ export class YouTubeService {
   }
 
   /**
+   * Busca múltiples videos y retorna un array de resultados
+   * Útil para el comando !search que permite elegir entre varias opciones
+   */
+  async searchMultiple(query: string, limit: number = 5): Promise<Song[]> {
+    try {
+      console.log(`🔍 Buscando múltiples resultados para: "${query}"`);
+      const searchResults = await YouTube.search(query, {
+        limit: limit,
+        type: 'video'
+      });
+
+      if (!searchResults || searchResults.length === 0) {
+        console.log('❌ No se encontraron resultados');
+        return [];
+      }
+
+      console.log(`✅ ${searchResults.length} videos encontrados`);
+
+      // Convertir resultados al formato Song
+      return searchResults.map((video: any) => ({
+        title: video.title || 'Unknown Title',
+        url: video.url,
+        duration: video.duration / 1000, // youtube-sr retorna en ms
+        thumbnail: video.thumbnail?.url,
+        requestedBy: '', // Se asignará cuando el usuario seleccione
+        channel: video.channel?.name || 'Unknown Channel', // Metadata adicional
+      }));
+    } catch (error) {
+      console.error('Error buscando múltiples videos:', error);
+      return [];
+    }
+  }
+
+  /**
    * Obtiene todos los videos de una playlist
    * Usa yt-dlp para manejar playlists grandes (300+ videos)
    */

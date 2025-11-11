@@ -4,6 +4,7 @@ export interface Song {
   duration: number; // en segundos
   thumbnail?: string;
   requestedBy: string;
+  channel?: string; // nombre del canal/artista (para comando search)
 }
 
 export interface QueueOptions {

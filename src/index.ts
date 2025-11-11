@@ -21,6 +21,7 @@ import { stop } from './commands/stop.js';
 import { volume } from './commands/volume.js';
 import { move } from './commands/move.js';
 import { nowplaying } from './commands/nowplaying.js';
+import { search } from './commands/search.js';
 import { recommend } from './commands/recommend.js';
 import { help } from './commands/help.js';
 
@@ -45,7 +46,7 @@ const client = new Client({
 
 // Cargar comandos
 const commands = new Collection<string, Command>();
-const commandList = [play, pause, resume, skip, queue, shuffle, repeat, stop, volume, move, nowplaying, recommend, help];
+const commandList = [play, pause, resume, skip, queue, shuffle, repeat, stop, volume, move, nowplaying, search, recommend, help];
 
 for (const command of commandList) {
   commands.set(command.name, command);

@@ -6,6 +6,7 @@ import { YouTubeService } from '../services/YouTubeService.js';
 import { AIService } from '../services/AIService.js';
 import { createPlayerButtons } from '../components/PlayerButtons.js';
 import { recommendationsCache } from '../commands/recommend.js';
+import { searchResultsCache } from '../commands/search.js';
 
 // Cache para almacenar la página actual de la cola (messageId -> page)
 const queuePaginationCache = new Map<string, number>();
@@ -81,6 +82,20 @@ export class ButtonHandler {
           break;
         case 'rec_add_all':
           await this.handleRecommendationAddAll(interaction, guildId);
+          break;
+        case 'search_play_0':
+        case 'search_play_1':
+        case 'search_play_2':
+        case 'search_play_3':
+        case 'search_play_4':
+          await this.handleSearchPlay(interaction, guildId);
+          break;
+        case 'search_queue_0':
+        case 'search_queue_1':
+        case 'search_queue_2':
+        case 'search_queue_3':
+        case 'search_queue_4':
+          await this.handleSearchQueue(interaction, guildId);
           break;
       }
     } catch (error) {
@@ -885,6 +900,166 @@ export class ButtonHandler {
       await interaction.editReply({
         content: '❌ Error al agregar las recomendaciones.'
       });
+    }
+  }
+
+  private async handleSearchPlay(interaction: any, guildId: string) {
+    // Obtener el índice del resultado desde el customId (search_play_0 -> 0)
+    const index = parseInt(interaction.customId.split('_')[2]);
+
+    // Obtener los resultados del cache usando el messageId
+    const results = searchResultsCache.get(interaction.message.id);
+
+    if (!results || !results[index]) {
+      await interaction.reply({
+        content: '❌ Los resultados de búsqueda han expirado. Usa `!search` nuevamente.',
+        ephemeral: true
+      });
+      return;
+    }
+
+    const selectedSong = results[index];
+
+    // Verificar si el usuario está en un canal de voz
+    const member = interaction.member;
+    if (!member?.voice?.channel) {
+      await interaction.reply({
+        content: '❌ Debes estar en un canal de voz para reproducir música.',
+        ephemeral: true
+      });
+      return;
+    }
+
+    const voiceChannel = member.voice.channel;
+
+    try {
+      // Defer reply para evitar timeout de 3 segundos
+      await interaction.deferReply({ ephemeral: false });
+
+      // Agregar usuario que solicitó la canción
+      selectedSong.requestedBy = interaction.user.tag;
+
+      // Detener reproducción actual si existe
+      const state = this.queueService.getQueue(guildId);
+      if (state.isPlaying) {
+        this.audioService.stop(guildId);
+      }
+
+      // Limpiar cola actual y agregar la canción
+      this.queueService.clearQueue(guildId);
+      this.queueService.addSong(guildId, selectedSong);
+
+      // Iniciar reproducción
+      await this.audioService.joinChannel(voiceChannel);
+
+      // Guardar referencia del canal para que AudioService envíe los botones
+      const updatedState = this.queueService.getQueue(guildId);
+      updatedState.playerChannelId = interaction.channelId;
+
+      await this.audioService.play(guildId);
+
+      await interaction.editReply({
+        content: `▶️ **Reproduciendo ahora:** ${selectedSong.title}`
+      });
+
+      // Auto-eliminar mensaje después de 5 segundos
+      setTimeout(() => {
+        interaction.deleteReply().catch(() => {});
+      }, 5000);
+
+    } catch (error) {
+      console.error('Error en handleSearchPlay:', error);
+
+      // Intentar editar si ya se hizo defer, o responder si no
+      if (interaction.deferred) {
+        await interaction.editReply({
+          content: `❌ Error al reproducir: **${selectedSong.title}**`
+        });
+      } else {
+        await interaction.reply({
+          content: `❌ Error al reproducir: **${selectedSong.title}**`,
+          ephemeral: true
+        });
+      }
+    }
+  }
+
+  private async handleSearchQueue(interaction: any, guildId: string) {
+    // Obtener el índice del resultado desde el customId (search_queue_0 -> 0)
+    const index = parseInt(interaction.customId.split('_')[2]);
+
+    // Obtener los resultados del cache usando el messageId
+    const results = searchResultsCache.get(interaction.message.id);
+
+    if (!results || !results[index]) {
+      await interaction.reply({
+        content: '❌ Los resultados de búsqueda han expirado. Usa `!search` nuevamente.',
+        ephemeral: true
+      });
+      return;
+    }
+
+    const selectedSong = results[index];
+
+    // Verificar si el usuario está en un canal de voz
+    const member = interaction.member;
+    if (!member?.voice?.channel) {
+      await interaction.reply({
+        content: '❌ Debes estar en un canal de voz para agregar canciones.',
+        ephemeral: true
+      });
+      return;
+    }
+
+    const voiceChannel = member.voice.channel;
+
+    try {
+      // Defer reply para evitar timeout de 3 segundos
+      await interaction.deferReply({ ephemeral: false });
+
+      // Agregar usuario que solicitó la canción
+      selectedSong.requestedBy = interaction.user.tag;
+
+      // Agregar a la cola
+      this.queueService.addSong(guildId, selectedSong);
+
+      // Si no está reproduciendo, iniciar reproducción
+      const state = this.queueService.getQueue(guildId);
+      if (!state.isPlaying) {
+        await this.audioService.joinChannel(voiceChannel);
+
+        // Guardar referencia del canal para que AudioService envíe los botones
+        state.playerChannelId = interaction.channelId;
+
+        await this.audioService.play(guildId);
+        await interaction.editReply({
+          content: `▶️ **Reproduciendo:** ${selectedSong.title}`
+        });
+      } else {
+        await interaction.editReply({
+          content: `✅ **Agregado a la cola:** ${selectedSong.title}`
+        });
+      }
+
+      // Auto-eliminar mensaje después de 8 segundos
+      setTimeout(() => {
+        interaction.deleteReply().catch(() => {});
+      }, 8000);
+
+    } catch (error) {
+      console.error('Error en handleSearchQueue:', error);
+
+      // Intentar editar si ya se hizo defer, o responder si no
+      if (interaction.deferred) {
+        await interaction.editReply({
+          content: `❌ Error al agregar: **${selectedSong.title}**`
+        });
+      } else {
+        await interaction.reply({
+          content: `❌ Error al agregar: **${selectedSong.title}**`,
+          ephemeral: true
+        });
+      }
     }
   }
 

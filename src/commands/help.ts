@@ -16,17 +16,25 @@ export const help: Command = {
           name: '▶️ Reproducción',
           value:
             '`!play <url o nombre>` - Reproduce una canción (URL o búsqueda)\n' +
+            '`!search <búsqueda>` - Busca y elige entre 5 resultados\n' +
             '`!pause` - Pausa la reproducción\n' +
             '`!resume` - Reanuda la reproducción\n' +
             '`!skip` - Salta a la siguiente canción\n' +
-            '`!stop` - Detiene y desconecta el bot',
+            '`!stop` - Detiene y desconecta el bot\n' +
+            '`!nowplaying` - Muestra la canción actual con progreso',
         },
         {
           name: '📋 Cola',
           value:
             '`!queue` - Muestra la cola de reproducción\n' +
             '`!shuffle` - Activa/desactiva modo aleatorio\n' +
-            '`!repeat <none|song|queue>` - Configura repetición',
+            '`!repeat <none|song|queue>` - Configura repetición\n' +
+            '`!move <pos1> <pos2>` - Reordena canciones en la cola',
+        },
+        {
+          name: '🔊 Audio',
+          value:
+            '`!volume [0-100]` - Ajusta el volumen de reproducción',
         },
         {
           name: '🤖 IA',
