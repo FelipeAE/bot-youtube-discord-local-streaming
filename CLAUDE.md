@@ -1,10 +1,322 @@
 # Resumen de Cambios Recientes - Bot de Música Discord
 
-## Última Actualización: 2025-11-06
+## Última Actualización: 2025-11-11
 
-### 🎉 Version 3.5 - Now Playing con Progreso & Cookies Mejoradas
+### 🎉 Version 4.0 - Sistema de Favoritos con SQLite + Búsqueda Interactiva
 
-Se implementó el sistema de progreso en tiempo real y sistema de cookies automático desde navegador.
+Se implementó sistema completo de favoritos con base de datos persistente y búsqueda con opciones múltiples.
+
+---
+
+## ✅ Cambios Implementados (Sesión 2025-11-11)
+
+### 1. **Sistema de Favoritos Completo** ⭐
+- ✅ Base de datos SQLite persistente (`database/favorites.db`)
+- ✅ 5 comandos nuevos de favoritos:
+  - `!favorite` / `!fav` / `!f` - Agrega canción actual
+  - `!favorites` / `!favs` / `!favoritos` - Lista paginada (10 por página)
+  - `!unfavorite <#>` / `!unfav` / `!uf` - Elimina favorito por índice
+  - `!playfavorite <#>` / `!pf` / `!playf` - Reproduce favorito directamente
+  - `!queuefavorites` / `!qf` / `!qfavs` - Agrega TODOS los favoritos a la cola
+- ✅ Botón ⭐ Favorito en reproductor (acceso rápido)
+- ✅ Favoritos por usuario y servidor (aislados)
+- ✅ Sin duplicados (constraint UNIQUE en DB)
+- ✅ Navegación paginada con botones
+- **Archivos nuevos**:
+  - `src/services/FavoritesService.ts` - Lógica SQLite (220 líneas)
+  - `src/commands/favorite.ts` - Agregar favorito
+  - `src/commands/favorites.ts` - Listar con paginación
+  - `src/commands/unfavorite.ts` - Eliminar favorito
+  - `src/commands/playfavorite.ts` - Reproducir favorito
+  - `src/commands/queuefavorites.ts` - Agregar todos a cola
+- **Dependencias nuevas**:
+  - `better-sqlite3` v11.8.1
+  - `@types/better-sqlite3` v7.6.12
+
+### 2. **Comando de Búsqueda Interactiva** 🔍
+- ✅ Nuevo comando: `!search <búsqueda>` (aliases: `!s`, `!find`)
+- ✅ Muestra 5 resultados con thumbnail, canal y duración
+- ✅ Botones interactivos:
+  - Fila 1: `▶️ 1-5` = Play Now (reproduce inmediatamente)
+  - Fila 2: `➕ 1-5` = Add to Queue (agrega al final)
+- ✅ Cache de resultados (5 min expiry)
+- ✅ Fix de timeout con `deferReply()` (evita error "Unknown interaction")
+- ✅ Mensajes auto-eliminables (5-8 segundos)
+- **Archivos nuevos**:
+  - `src/commands/search.ts` - Comando de búsqueda
+- **Archivos modificados**:
+  - `src/services/YouTubeService.ts` - Método `searchMultiple()`
+  - `src/types/index.ts` - Campo opcional `channel` en Song
+  - `src/handlers/ButtonHandler.ts` - Handlers search_play/search_queue
+
+### 3. **Botón ⭐ Favorito en Reproductor**
+- ✅ Nuevo botón en primera fila del reproductor
+- ✅ Un click para agregar canción actual a favoritos
+- ✅ Mensaje ephemeral (solo lo ve quien hace click)
+- ✅ Detecta duplicados automáticamente
+- ✅ Muestra contador de favoritos totales
+- **Archivos modificados**:
+  - `src/components/PlayerButtons.ts` - Botón favorito agregado
+  - `src/handlers/ButtonHandler.ts` - Handler `player_favorite`
+
+### 4. **Mejoras en Base de Datos**
+- ✅ Auto-creación de directorio `/database`
+- ✅ Tabla con índices optimizados
+- ✅ Cierre limpio de DB en shutdown
+- ✅ `.gitignore` actualizado (database/ excluido)
+- ✅ CRUD completo con manejo de errores
+
+---
+
+## 🎮 Comandos Actualizados (v4.0)
+
+### Comandos de Búsqueda
+
+#### `!search` **[NUEVO]**
+```bash
+!search bad bunny    # Busca y muestra 5 resultados
+!s despacito         # Alias corto
+!find tusa           # Alias alternativo
+```
+
+**Muestra:**
+- 5 resultados con thumbnail del primero
+- Título, canal y duración de cada video
+- Botones para Play Now o Add to Queue
+- Expira en 5 minutos
+
+### Comandos de Favoritos **[NUEVOS]**
+
+#### `!favorite` - Agregar
+```bash
+!favorite    # Agrega canción actual
+!fav         # Alias
+!f           # Alias corto
+```
+
+#### `!favorites` - Listar
+```bash
+!favorites   # Muestra lista paginada
+!favs        # Alias
+!favoritos   # Alias español
+```
+
+#### `!unfavorite` - Eliminar
+```bash
+!unfavorite 5   # Elimina favorito #5
+!unfav 3        # Alias
+!uf 1           # Alias corto
+```
+
+#### `!playfavorite` - Reproducir
+```bash
+!playfavorite 3   # Reproduce favorito #3
+!pf 5             # Alias
+!playf 1          # Alias
+```
+
+#### `!queuefavorites` - Agregar Todos **[NUEVO]**
+```bash
+!queuefavorites   # Agrega todos los favoritos a la cola
+!qf               # Alias
+!qfavs            # Alias
+!addfavs          # Alias alternativo
+```
+
+**Comportamiento:**
+- Agrega todos los favoritos del usuario
+- NO borra cola existente (agrega al final)
+- Inicia reproducción si no hay música sonando
+- Perfecto para sesiones largas
+
+---
+
+## 📊 Comparación v3.6 vs v4.0
+
+| Aspecto | v3.6 | v4.0 |
+|---------|------|------|
+| **Comandos totales** | 14 | 19 |
+| **Botones reproductor** | 9 | 10 |
+| **Base de datos** | ❌ | ✅ SQLite |
+| **Sistema de favoritos** | ❌ | ✅ Completo (5 comandos) |
+| **Búsqueda interactiva** | ❌ | ✅ Con selección múltiple |
+| **Persistencia** | ❌ | ✅ Favoritos guardados |
+| **Favoritos por usuario** | N/A | ✅ Aislados por server/user |
+
+---
+
+## 🎯 Estado Actual del Bot (v4.0)
+
+### ✅ Funcionando:
+- Bot conectado sin errores
+- 19 comandos cargados
+- Sistema de streaming activo
+- 10 botones interactivos (5 dinámicos)
+- Control de volumen completo
+- Recomendaciones IA mejoradas
+- Progreso en tiempo real
+- Cookies automáticas desde navegador
+- Skip inteligente
+- **Sistema de favoritos completo** ⭐ NUEVO
+- **Búsqueda interactiva** ⭐ NUEVO
+- **Base de datos SQLite** ⭐ NUEVO
+
+### 🔧 Comandos Disponibles:
+1. `!play [URL/búsqueda]` - Reproducir música (soporta playlists)
+2. `!search <búsqueda>` - Buscar y elegir entre 5 resultados ⭐ NUEVO
+3. `!pause` - Pausar reproducción
+4. `!resume` - Reanudar reproducción
+5. `!skip` - Saltar canción
+6. `!stop` - Detener y limpiar cola
+7. `!queue` - Ver cola (paginada)
+8. `!shuffle` - Activar/desactivar aleatorio
+9. `!repeat [none|song|queue]` - Modo repetición
+10. `!volume [0-100]` - Ajustar volumen
+11. `!move <pos1> <pos2>` - Reordenar cola
+12. `!nowplaying` - Ver progreso actual
+13. `!favorite` - Agregar a favoritos ⭐ NUEVO
+14. `!favorites` - Ver lista de favoritos ⭐ NUEVO
+15. `!unfavorite <#>` - Eliminar favorito ⭐ NUEVO
+16. `!playfavorite <#>` - Reproducir favorito ⭐ NUEVO
+17. `!queuefavorites` - Agregar todos a cola ⭐ NUEVO
+18. `!recommend` - Recomendaciones de IA
+19. `!help` - Ayuda
+
+---
+
+## 🐛 Problemas Conocidos
+
+### 1. Solapamiento de Audio (Menor)
+**Problema:** Cuando se usa "Play Now" desde search o playfavorite mientras hay música sonando, hay un breve solapamiento de audio (< 1 segundo).
+
+**Causa:** `audioService.stop()` es síncrono pero el stream tarda ~100-200ms en cerrarse completamente. Cuando inmediatamente se llama a `play()`, ambos streams se solapan momentáneamente.
+
+**Archivos afectados:**
+- `src/handlers/ButtonHandler.ts` (handleSearchPlay - línea 944)
+- `src/commands/playfavorite.ts` (línea 52)
+
+**Solución propuesta:** Agregar delay asíncrono después de `stop()` o hacer que `stop()` retorne Promise y espere al cierre del player.
+
+**Prioridad:** Baja (funcionalidad no afectada, solo experiencia de audio)
+
+---
+
+## 🚀 Próximos Pasos Sugeridos
+
+### Prioridad Alta:
+1. **Arreglar solapamiento de audio** 🔜
+   - Hacer `stop()` asíncrono con delay de 100-200ms
+   - O esperar evento de player cerrado
+   - Estimado: ~30 minutos
+
+### Prioridad Media:
+2. **Estadísticas de favoritos**
+   - Comando `!favstats` - Mostrar top 10 favoritos del servidor
+   - Favoritos más agregados
+   - Usuario con más favoritos
+
+3. **Seek Command** (Opcional - Técnicamente limitado)
+   - Reinicio desde timestamp (no true seeking)
+   - Requiere re-arquitectura del streaming
+
+### Prioridad Baja:
+4. **Integraciones externas**
+   - Spotify (solo metadata, reproducción desde YouTube)
+   - SoundCloud
+   - Bandcamp
+
+---
+
+## 💻 Notas Técnicas (v4.0)
+
+### Sistema de Favoritos - SQLite:
+```typescript
+// Estructura de la tabla
+CREATE TABLE favorites (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  url TEXT NOT NULL,
+  duration INTEGER NOT NULL,
+  thumbnail TEXT,
+  channel TEXT,
+  added_at INTEGER NOT NULL,
+  UNIQUE(guild_id, user_id, url)
+);
+```
+
+**Métodos principales:**
+- `addFavorite()` - Inserta con protección de duplicados
+- `getFavorites()` - Obtiene todos los favoritos
+- `getFavoritesPaginated()` - Obtiene con paginación
+- `removeFavoriteByIndex()` - Elimina por índice
+- `favoriteToSong()` - Convierte para reproducción
+
+### Búsqueda Interactiva:
+```typescript
+// YouTubeService.searchMultiple()
+const searchResults = await YouTube.search(query, {
+  limit: 5,
+  type: 'video'
+});
+
+// Cache de resultados (5 min)
+searchResultsCache.set(messageId, results);
+
+// Botones con índices
+search_play_0, search_play_1, ..., search_play_4
+search_queue_0, search_queue_1, ..., search_queue_4
+```
+
+---
+
+## 📁 Archivos Modificados (Sesión 11-11)
+
+### Nuevos Archivos (7):
+1. **src/services/FavoritesService.ts** - Servicio SQLite (220 líneas)
+2. **src/commands/favorite.ts** - Agregar favorito
+3. **src/commands/favorites.ts** - Listar con paginación
+4. **src/commands/unfavorite.ts** - Eliminar favorito
+5. **src/commands/playfavorite.ts** - Reproducir favorito
+6. **src/commands/queuefavorites.ts** - Agregar todos a cola
+7. **src/commands/search.ts** - Búsqueda interactiva
+
+### Archivos Actualizados (8):
+1. **package.json** - Dependencias better-sqlite3
+2. **.gitignore** - Excluir database/
+3. **src/types/index.ts** - Campo `channel` opcional
+4. **src/services/YouTubeService.ts** - Método searchMultiple()
+5. **src/components/PlayerButtons.ts** - Botón favorito
+6. **src/handlers/ButtonHandler.ts** - Handlers favoritos + search
+7. **src/index.ts** - Registro comandos + FavoritesService
+8. **src/commands/help.ts** - Secciones actualizadas
+
+---
+
+## 📝 Historial de Versiones
+
+### v4.0 (2025-11-11) ⭐ ACTUAL
+- ✅ Sistema completo de favoritos (SQLite)
+- ✅ 5 comandos de favoritos
+- ✅ Botón ⭐ en reproductor
+- ✅ Búsqueda interactiva con selección múltiple
+- ✅ 19 comandos totales
+- ✅ 10 botones en reproductor
+- ✅ Base de datos persistente
+
+### v3.6 (2025-11-11)
+- ✅ Comando `!search` con 5 resultados
+- ✅ Botones Play Now / Add to Queue
+- ✅ Fix de timeout con deferReply()
+- ✅ 14 comandos totales
+
+### v3.5 (2025-11-06)
+- ✅ Comando `!nowplaying` con barra de progreso
+- ✅ Botón Now Playing regenera botones
+- ✅ Skip inteligente (verifica cola)
+- ✅ Sistema de cookies desde navegador
+- ✅ 13 comandos totales
 
 ---
 
