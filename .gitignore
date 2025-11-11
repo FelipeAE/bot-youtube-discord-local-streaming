@@ -10,3 +10,6 @@ temp/
 cookies.txt
 *.cookies
 youtube.com_cookies.txt
+
+# Base de datos local (favoritos de usuarios)
+database/

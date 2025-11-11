@@ -37,6 +37,15 @@ export const help: Command = {
             '`!volume [0-100]` - Ajusta el volumen de reproducción',
         },
         {
+          name: '⭐ Favoritos',
+          value:
+            '`!favorite` - Agrega la canción actual a favoritos\n' +
+            '`!favorites` - Muestra tu lista de favoritos\n' +
+            '`!unfavorite <número>` - Elimina un favorito\n' +
+            '`!playfavorite <número>` - Reproduce un favorito\n' +
+            '`!queuefavorites` - Agrega todos tus favoritos a la cola',
+        },
+        {
           name: '🤖 IA',
           value: '`!recommend` - Obtiene recomendaciones basadas en la canción actual',
         },

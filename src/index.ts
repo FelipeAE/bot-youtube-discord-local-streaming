@@ -4,6 +4,7 @@ import { QueueService } from './services/QueueService.js';
 import { YouTubeService } from './services/YouTubeService.js';
 import { AudioService } from './services/AudioService.js';
 import { AIService } from './services/AIService.js';
+import { FavoritesService } from './services/FavoritesService.js';
 import { ButtonHandler } from './handlers/ButtonHandler.js';
 import type { Command } from './types/command.js';
 import fs from 'fs';
@@ -22,6 +23,11 @@ import { volume } from './commands/volume.js';
 import { move } from './commands/move.js';
 import { nowplaying } from './commands/nowplaying.js';
 import { search } from './commands/search.js';
+import { favorite } from './commands/favorite.js';
+import { favorites } from './commands/favorites.js';
+import { unfavorite } from './commands/unfavorite.js';
+import { playfavorite } from './commands/playfavorite.js';
+import { queuefavorites } from './commands/queuefavorites.js';
 import { recommend } from './commands/recommend.js';
 import { help } from './commands/help.js';
 
@@ -30,9 +36,10 @@ const queueService = new QueueService();
 const youtubeService = new YouTubeService();
 const audioService = new AudioService(queueService, youtubeService);
 const aiService = new AIService();
+const favoritesService = new FavoritesService();
 
 // Exportar servicios para que los comandos puedan acceder a ellos
-export { queueService, youtubeService, audioService, aiService };
+export { queueService, youtubeService, audioService, aiService, favoritesService };
 
 // Crear cliente de Discord
 const client = new Client({
@@ -46,7 +53,7 @@ const client = new Client({
 
 // Cargar comandos
 const commands = new Collection<string, Command>();
-const commandList = [play, pause, resume, skip, queue, shuffle, repeat, stop, volume, move, nowplaying, search, recommend, help];
+const commandList = [play, pause, resume, skip, queue, shuffle, repeat, stop, volume, move, nowplaying, search, favorite, favorites, unfavorite, playfavorite, queuefavorites, recommend, help];
 
 for (const command of commandList) {
   commands.set(command.name, command);
@@ -146,6 +153,10 @@ async function shutdown() {
 
     console.log('👋 Destruyendo cliente de Discord...');
     client.destroy();
+
+    // Cerrar base de datos
+    console.log('📊 Cerrando base de datos...');
+    favoritesService.close();
 
     // Eliminar archivo PID
     try {

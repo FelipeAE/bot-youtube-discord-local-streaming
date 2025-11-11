@@ -19,7 +19,11 @@ export function createPlayerButtons(state?: PlayerState) {
       new ButtonBuilder()
         .setCustomId('player_stop')
         .setLabel('⏹️ Detener')
-        .setStyle(ButtonStyle.Danger)
+        .setStyle(ButtonStyle.Danger),
+      new ButtonBuilder()
+        .setCustomId('player_favorite')
+        .setLabel('⭐ Favorito')
+        .setStyle(ButtonStyle.Success)
     );
 
   // Determinar emoji y estilo de repeat
